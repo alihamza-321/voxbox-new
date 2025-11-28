@@ -134,11 +134,6 @@ const Register = () => {
 
     if (isPasswordValid && hasNoErrors && isFilled) {
       try {
-        // Split full name into first and last name
-        const nameParts = formData.fullName.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
         await register({
           name: formData.fullName.trim(),
           email: formData.email,

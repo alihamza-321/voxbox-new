@@ -1,4 +1,4 @@
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import BackgroundTech from "@/components/BackgroundTech";
 import { PaymentService } from "@/lib/payment";
@@ -9,7 +9,7 @@ const ThankYou = () => {
   const navigate = useNavigate();
   const sessionId = searchParams.get("session_id");
   const [userName, setUserName] = useState("");
-  const [planName, setPlanName] = useState("Pro Plan");
+  const [planName] = useState("Pro Plan");
   const [isMuted, setIsMuted] = useState(true);
 
   // Process payment success when component mounts

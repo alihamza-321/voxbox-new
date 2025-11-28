@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import BackgroundTech from "@/components/BackgroundTech";
 import { AuthService } from "@/lib/auth";
 
@@ -8,7 +8,6 @@ interface FieldErrors {
 }
 
 const ForgotPassword = () => {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
