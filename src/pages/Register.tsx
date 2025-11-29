@@ -134,11 +134,6 @@ const Register = () => {
 
     if (isPasswordValid && hasNoErrors && isFilled) {
       try {
-        // Split full name into first and last name
-        const nameParts = formData.fullName.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
         await register({
           name: formData.fullName.trim(),
           email: formData.email,
@@ -157,6 +152,7 @@ const Register = () => {
   };
 
   // --- SHARED INPUT STYLES ---
+  // This class string now includes the hover shadow effect you requested
   const inputClasses = (hasError: boolean) => `
     w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none 
     transition-all duration-300

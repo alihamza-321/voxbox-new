@@ -185,6 +185,7 @@ const Login: React.FC = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [showPass, setShowPass] = useState(false);
 
   // --- Forgot Password State ---
@@ -230,6 +231,7 @@ const Login: React.FC = () => {
     if (!formData.password) newErrors.password = "Password is required.";
 
     setErrors(newErrors);
+    setTouched({ email: true, password: true });
 
     if (Object.keys(newErrors).length === 0) {
       try {
