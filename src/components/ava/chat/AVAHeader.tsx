@@ -75,14 +75,130 @@ export const AVAHeader = ({
   };
 
   const headerClassName = cn(
-    "bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/50",
+    "relative bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/50 overflow-hidden",
     offsetClassName,
     className
   );
 
   return (
     <div className={headerClassName}>
-      <div className="w-[80%] mx-auto py-2">
+      {/* Honeycomb Pattern Background - Aesthetic corners with modern design */}
+      <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
+        {/* Top Left Corner - Cyan/Blue theme */}
+        <div className="absolute top-0 left-0 w-48 h-48">
+          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-cyan-400/40">
+            <defs>
+              <pattern id="hexTopLeft" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.2"
+                  className="text-cyan-400/50"
+                />
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="0.6"
+                  className="text-blue-400/30"
+                  opacity="0.6"
+                />
+              </pattern>
+            </defs>
+            <rect width="200" height="200" fill="url(#hexTopLeft)" />
+          </svg>
+        </div>
+        
+        {/* Top Right Corner - Purple/Cyan theme */}
+        <div className="absolute top-0 right-0 w-48 h-48">
+          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-purple-400/40">
+            <defs>
+              <pattern id="hexTopRight" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.2"
+                  className="text-purple-400/50"
+                />
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="0.6"
+                  className="text-cyan-400/30"
+                  opacity="0.6"
+                />
+              </pattern>
+            </defs>
+            <rect width="200" height="200" fill="url(#hexTopRight)" />
+          </svg>
+        </div>
+        
+        {/* Bottom Left Corner - Blue/Purple theme */}
+        <div className="absolute bottom-0 left-0 w-48 h-48">
+          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-blue-400/40">
+            <defs>
+              <pattern id="hexBottomLeft" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.2"
+                  className="text-blue-400/50"
+                />
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="0.6"
+                  className="text-purple-400/30"
+                  opacity="0.6"
+                />
+              </pattern>
+            </defs>
+            <rect width="200" height="200" fill="url(#hexBottomLeft)" />
+          </svg>
+        </div>
+        
+        {/* Bottom Right Corner - Cyan/Blue theme */}
+        <div className="absolute bottom-0 right-0 w-48 h-48">
+          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-cyan-400/40">
+            <defs>
+              <pattern id="hexBottomRight" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.2"
+                  className="text-cyan-400/50"
+                />
+                <polygon 
+                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="0.6"
+                  className="text-blue-400/30"
+                  opacity="0.6"
+                />
+              </pattern>
+            </defs>
+            <rect width="200" height="200" fill="url(#hexBottomRight)" />
+          </svg>
+        </div>
+      </div>
+      
+      {/* Gradient Overlay for depth and aesthetic blend */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent via-transparent to-purple-500/8 pointer-events-none" />
+      
+      {/* Subtle corner glow effects */}
+      <div className="absolute top-0 left-0 w-48 h-48 bg-gradient-to-br from-cyan-500/5 to-transparent rounded-br-full blur-2xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-500/5 to-transparent rounded-bl-full blur-2xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/5 to-transparent rounded-tr-full blur-2xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-48 h-48 bg-gradient-to-tl from-cyan-500/5 to-transparent rounded-tl-full blur-2xl pointer-events-none" />
+      
+      <div className="relative w-[80%] mx-auto py-2 z-10">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <img 

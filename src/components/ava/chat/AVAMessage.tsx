@@ -2,7 +2,6 @@ import type { ChatMessage } from "@/lib/ava-chat-types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AVAExampleChips } from "./AVAExampleChips";
-import avaAvatar from "@/assets/ava-avatar.png";
 
 interface AVAMessageProps {
   message: ChatMessage;
@@ -40,19 +39,7 @@ export const AVAMessage = ({ message, onExampleSelect, onActionClick }: AVAMessa
   return (
     <div className={`flex ${isAVA ? 'justify-start' : 'justify-end'} animate-fade-in mb-6`}>
       <div className={`flex gap-3 ${isAVA ? 'flex-row' : 'flex-row-reverse'} w-full`}>
-        {/* Avatar */}
-        {isAVA ? (
-          <img 
-            src={avaAvatar} 
-            alt="AVA" 
-            className="w-10 h-10 rounded-xl object-contain flex-shrink-0"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-md shadow-cyan-500/30">
-            <span>You</span>
-          </div>
-        )}
-
+        {/* Avatars removed */}
         {/* Message Bubble */}
         <div className={`
           rounded-2xl ${isAVA ? 'rounded-tl-sm' : 'rounded-tr-sm'} p-4 w-[70%] shadow-sm

@@ -46,7 +46,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         }`}
       >
         <AppNavbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto chatgpt-scrollbar">
           {children || <Outlet />}
         </main>
       </div>
