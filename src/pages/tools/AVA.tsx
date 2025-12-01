@@ -5,6 +5,7 @@ import { AVAPhase2ChatInterface } from "@/components/ava/chat/AVAPhase2ChatInter
 import { AVAWelcome } from "@/components/ava/AVAWelcome";
 import { AVAHeader } from "@/components/ava/chat/AVAHeader";
 import { useToast } from "@/hooks/use-toast";
+import { useSidebarState } from "@/hooks/useSidebarState";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { createAvaSession, getSessionDetails, cancelAvaSession, exportProfilePDF } from "@/lib/ava-api";
@@ -13,8 +14,97 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 const AVA = () => {
   const { toast } = useToast();
   const { currentWorkspace, isLoading: workspaceLoading } = useWorkspace();
+  const { leftOffset } = useSidebarState();
   const location = useLocation();
   const navigate = useNavigate();
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
+
+  // Calculate scrollbar width to prevent overlap with AVAHeader
+  useEffect(() => {
+    const calculateScrollbarWidth = () => {
+      // Create a temporary element to measure scrollbar width
+      const outer = document.createElement('div');
+      outer.style.visibility = 'hidden';
+      outer.style.overflow = 'scroll';
+      outer.style.msOverflowStyle = 'scrollbar';
+      document.body.appendChild(outer);
+
+      const inner = document.createElement('div');
+      outer.appendChild(inner);
+
+      const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+      outer.parentNode?.removeChild(outer);
+
+      setScrollbarWidth(scrollbarWidth);
+    };
+
+    calculateScrollbarWidth();
+    window.addEventListener('resize', calculateScrollbarWidth);
+    return () => window.removeEventListener('resize', calculateScrollbarWidth);
+  }, []);
+  const [sidebarOffset, setSidebarOffset] = useState(leftOffset);
+
+  // Monitor sidebar width changes more reliably - directly read from sidebar element
+  useEffect(() => {
+    const updateSidebarOffset = () => {
+      // Get sidebar element directly
+      const sidebar = document.querySelector('aside[class*="fixed"]');
+      if (sidebar) {
+        const computedStyle = getComputedStyle(sidebar);
+        const width = sidebar.offsetWidth || parseInt(computedStyle.width) || 0;
+        const transform = computedStyle.transform;
+        // Check if sidebar is visible (not translated off-screen on mobile)
+        const isTranslatedOffScreen = transform && transform !== 'none' && transform.includes('translateX(-');
+        const isMobile = window.innerWidth < 768;
+        
+        if (isMobile && isTranslatedOffScreen) {
+          // Sidebar is hidden on mobile
+          setSidebarOffset(0);
+        } else if (width > 0) {
+          // Use actual sidebar width (64px collapsed, 288px expanded)
+          setSidebarOffset(width);
+        } else {
+          // Fallback to useSidebarState value
+          setSidebarOffset(leftOffset);
+        }
+      } else {
+        // Fallback to useSidebarState value
+        setSidebarOffset(leftOffset);
+      }
+    };
+
+    // Initial update with small delay to ensure DOM is ready
+    const timeoutId = setTimeout(updateSidebarOffset, 50);
+    updateSidebarOffset(); // Also try immediately
+
+    // Update on resize
+    window.addEventListener('resize', updateSidebarOffset);
+    
+    // Observe sidebar for class changes (collapsed/expanded)
+    const sidebar = document.querySelector('aside');
+    if (sidebar) {
+      const observer = new MutationObserver(updateSidebarOffset);
+      observer.observe(sidebar, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+
+      // Poll for changes (handles localStorage changes and transitions)
+      const interval = setInterval(updateSidebarOffset, 150);
+
+      return () => {
+        clearTimeout(timeoutId);
+        window.removeEventListener('resize', updateSidebarOffset);
+        observer.disconnect();
+        clearInterval(interval);
+      };
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateSidebarOffset);
+    };
+  }, [leftOffset]);
   const hasAttemptedRestore = useRef<string | null>(null); // Track which workspace ID we've restored for
   const isRestoringRef = useRef(false); // Prevent multiple simultaneous restores
   const initialSessionIdRef = useRef<string | null>(null); // Track the session ID we initialized with
@@ -701,13 +791,21 @@ const AVA = () => {
       <div className="flex flex-col min-h-[calc(100vh-80px)] overflow-hidden relative">
         {/* Background with Colors */}
         <div className="fixed inset-0 z-0 pointer-events-none bg-[#020617] opacity-80"></div>
-        {/* Single Header for both Phase 1 and Phase 2 */}
-        <div className="sticky top-20 z-50 bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/50">
+        {/* Single Header for both Phase 1 and Phase 2 - Fixed directly below AppNavbar */}
+        {/* Positioned at top-20 (80px) to be directly below AppNavbar, and sidebarOffset to account for sidebar */}
+        {/* Right position accounts for scrollbar width so scrollbar is visible and not hidden */}
+        <div 
+          className="fixed top-20 z-50 bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/50"
+          style={{ 
+            left: `${sidebarOffset}px`,
+            right: `${scrollbarWidth}px`
+          }}
+        >
           <AVAHeader 
             stage={headerStage}
             progress={headerProgress}
             userName={userName || "User"}
-            offsetClassName="top-20"
+            offsetClassName=""
             onReset={handleStartNew}
           />
           {currentStage === "phase2" && isPhase2Complete && (
@@ -733,9 +831,12 @@ const AVA = () => {
         </div>
 
         {/* Content Container - Phase 1 and Phase 2 in same scrollable container */}
+        {/* Padding accounts for AppNavbar (80px) + AVAHeader (~100px) = ~180px */}
         <div
-          className="flex-1 overflow-y-auto relative z-10"
-          style={{ paddingTop: currentStage === "phase2" ? "6rem" : "6rem" }} // Always add padding to prevent content from being hidden under header
+          className="flex-1 overflow-y-auto relative z-10 chatgpt-scrollbar"
+          style={{ 
+            paddingTop: "11.25rem" // 180px to account for navbar (80px) + header (~100px)
+          }}
         >
           {/* Phase 1 - Always show if we have a session (completed or active) */}
           {/* When Phase 2 is active, Phase 1 stays rendered to prevent flash/glitch */}
