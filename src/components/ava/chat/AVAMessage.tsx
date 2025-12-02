@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@/lib/ava-chat-types";
+ import type { ChatMessage } from "@/lib/ava-chat-types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AVAExampleChips } from "./AVAExampleChips";
@@ -63,13 +63,13 @@ export const AVAMessage = ({ message, onExampleSelect, onActionClick }: AVAMessa
             const isHTML = isHTMLContent(message.content);
             return (
               <div className={`
-                leading-relaxed text-sm
-                ${isUser ? 'font-medium text-slate-200' : 'text-slate-300'}
+                leading-relaxed text-base
+                ${isUser ? 'font-medium text-slate-200' : 'text-white font-normal tracking-wide'}
                 ${isHTML ? '' : 'whitespace-pre-wrap'}
               `}>
                 {isHTML ? (
                   <div 
-                    className="ava-message-content"
+                    className="ava-message-content text-white"
                     dangerouslySetInnerHTML={{ __html: message.content }}
                   />
                 ) : (

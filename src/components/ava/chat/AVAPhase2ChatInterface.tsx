@@ -10,6 +10,8 @@ import {
   Download,
   Sparkles,
   FileText,
+  Copy,
+  CheckCheck,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -3162,6 +3164,30 @@ export const AVAPhase2ChatInterface = ({
     setEditedContent("");
   };
 
+  const [copiedQuestionId, setCopiedQuestionId] = useState<string | null>(null);
+
+  const handleCopyAnswer = async (text: string, questionId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedQuestionId(questionId);
+      toast({
+        title: "Copied!",
+        description: "Answer copied to clipboard",
+      });
+      // Reset checkmark after 2 seconds
+      setTimeout(() => {
+        setCopiedQuestionId(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
   console.log("🎨 Phase 2 component rendering with state:", {
     sectionsCount: sections.length,
     currentSection,
@@ -3691,12 +3717,12 @@ export const AVAPhase2ChatInterface = ({
                                     onChange={(e) =>
                                       setEditedContent(e.target.value)
                                     }
-                                    className="min-h-[120px] text-[15px] leading-relaxed w-full bg-slate-800/50 border border-slate-700/50 focus:border-cyan-500/50 focus:ring-0 focus:outline-none rounded-lg px-4 py-3 transition-all duration-200 resize-none placeholder:text-slate-500 text-slate-200"
+                                    className="min-h-[120px] text-[15px] leading-relaxed w-full bg-slate-800/50 border-2 border-slate-700/50 focus:border-cyan-500/50 focus-visible:border-cyan-500/50 focus:ring-0 focus-visible:ring-0 focus:outline-none focus-visible:outline-none rounded-xl px-4 py-3 transition-all duration-200 resize-none placeholder:text-slate-500 text-slate-200 shadow-sm"
                                     placeholder="Edit your answer here..."
                                     autoFocus
                                   />
                                 ) : (
-                                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-slate-200">
+                                  <p className="text-base leading-relaxed whitespace-pre-wrap text-white font-normal tracking-wide">
                                     {displayAnswer}
                                   </p>
                                 )}
@@ -3741,11 +3767,9 @@ export const AVAPhase2ChatInterface = ({
                                         variant="outline"
                                         size="sm"
                                         onClick={handleCancelEdit}
-                                        className="group border-2 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-700 text-xs font-medium h-9 px-4 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                                        className="bg-slate-700 hover:bg-slate-600 border-0 text-white text-xs font-medium h-9 px-4 rounded-lg transition-all duration-200"
                                       >
-                                        <span className="relative z-10">
-                                          Cancel
-                                        </span>
+                                        Cancel
                                       </Button>
                                       <Button
                                         size="sm"
@@ -3757,41 +3781,52 @@ export const AVAPhase2ChatInterface = ({
                                           )
                                         }
                                         disabled={!question.id || isSavingEdit}
-                                        className="group relative bg-gradient-to-r from-vox-pink via-vox-orange to-vox-pink text-white text-xs font-medium h-9 px-5 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 hover:from-vox-pink/90 hover:via-vox-orange/90 hover:to-vox-pink/90"
+                                        className="bg-white hover:bg-gray-50 border-0 text-gray-700 hover:text-gray-900 text-xs font-medium h-9 px-4 rounded-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                       >
                                         {isSavingEdit ? (
                                           <>
                                             <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                                            <span>Saving...</span>
+                                            Saving...
                                           </>
                                         ) : (
-                                          <>
-                                            <Check className="w-3.5 h-3.5 mr-1.5 transition-transform group-hover:scale-110" />
-                                            <span className="relative z-10">
-                                              Save Changes
-                                            </span>
-                                          </>
+                                          "Save Changes"
                                         )}
-                                        <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-300" />
                                       </Button>
                                     </div>
                                   ) : (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleEdit(
-                                          question.questionId,
-                                          displayAnswer
-                                        )
-                                      }
-                                      className="group relative border-2 bg-white hover:bg-gradient-to-r hover:from-vox-purple/5 hover:to-indigo-50 border-vox-purple/30 hover:border-vox-purple/60 text-gray-700 hover:text-vox-purple text-xs font-medium h-9 px-4 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
-                                    >
-                                      <Edit className="w-3.5 h-3.5 mr-1.5 transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
-                                      <span className="relative z-10">
-                                        Edit Answer
-                                      </span>
-                                    </Button>
+                                    <div className="flex gap-1 items-center">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleEdit(
+                                            question.questionId,
+                                            displayAnswer
+                                          )
+                                        }
+                                        className="group relative border-0 bg-transparent hover:bg-vox-purple/10 text-gray-700 hover:text-vox-purple h-8 w-8 p-0 transition-all duration-300 hover:scale-110 active:scale-95"
+                                      >
+                                        <Edit className="w-4 h-4 transition-all duration-300 group-hover:rotate-12" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleCopyAnswer(
+                                            displayAnswer,
+                                            question.questionId
+                                          )
+                                        }
+                                        className="group relative border-0 bg-transparent hover:bg-vox-purple/10 text-gray-700 hover:text-vox-purple h-8 w-8 p-0 transition-all duration-300 hover:scale-110 active:scale-95"
+                                        title="Copy answer"
+                                      >
+                                        {copiedQuestionId === question.questionId ? (
+                                          <CheckCheck className="w-4 h-4 text-green-500 transition-all duration-300" />
+                                        ) : (
+                                          <Copy className="w-4 h-4 transition-all duration-300 group-hover:scale-110" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   )}
                                 </div>
 

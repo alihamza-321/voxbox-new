@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   User,
@@ -12,6 +12,8 @@ import {
   Menu,
   Bell,
   Search,
+  ChevronUp,
+  ChevronDown as ChevronDownIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -40,11 +42,61 @@ const AppNavbar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   } = useWorkspace();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdWorkspaceName] = useState("");
   const [targetWorkspace, setTargetWorkspace] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
+  
+  // AVA Progress data from localStorage (updated by AVA Phase 1)
+  const [avaProgress, setAvaProgress] = useState<{
+    isScrolled: boolean;
+    currentQuestionIndex: number;
+    totalQuestions: number;
+  } | null>(null);
+
+  const isAvaPage = location.pathname === "/tools/ava";
+
+  // Listen for AVA progress updates via custom event
+  useEffect(() => {
+    const handleAvaProgress = (e: CustomEvent) => {
+      setAvaProgress(e.detail);
+    };
+
+    const handleStorageChange = () => {
+      const progressData = localStorage.getItem("avaProgressData");
+      if (progressData) {
+        setAvaProgress(JSON.parse(progressData));
+      } else {
+        setAvaProgress(null);
+      }
+    };
+
+    window.addEventListener("avaProgressUpdate" as any, handleAvaProgress);
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Check initial state
+    const progressData = localStorage.getItem("avaProgressData");
+    if (progressData) {
+      setAvaProgress(JSON.parse(progressData));
+    }
+
+    return () => {
+      window.removeEventListener("avaProgressUpdate" as any, handleAvaProgress);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  // Calculate progress percentage
+  const getProgressValue = () => {
+    if (!avaProgress || !avaProgress.isScrolled) return 0;
+    const { currentQuestionIndex, totalQuestions } = avaProgress;
+    if (!totalQuestions || totalQuestions === 0) return 0;
+    if (currentQuestionIndex >= totalQuestions) return 100;
+    const percentage = (currentQuestionIndex / totalQuestions) * 100;
+    return Math.min(100, Math.max(0, isNaN(percentage) ? 0 : percentage));
+  };
 
   // Load subscription information
   useEffect(() => {
@@ -163,19 +215,21 @@ const AppNavbar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
       hasRecentPayment);
 
   return (
-    <nav className="h-20 px-4 md:px-8 flex items-center justify-between gap-4 border-b border-slate-800/50 bg-slate-900/20 backdrop-blur-sm z-20 w-full">
-      {/* Left Section: Search Bar */}
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-        <input
-          type="text"
-          placeholder="Search workspaces, profiles or templates..."
-          className="w-full bg-slate-950/50 border border-slate-800 rounded-full pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder:text-slate-600"
-        />
-      </div>
+    <nav className={`${isAvaPage && avaProgress?.isScrolled ? "pb-1" : ""} px-4 md:px-8 flex flex-col border-b border-slate-800/50 bg-slate-900/20 backdrop-blur-sm z-20 w-full transition-all duration-300`}>
+      {/* Main Navbar Content */}
+      <div className="h-20 flex items-center justify-between gap-4">
+        {/* Left Section: Search Bar */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search workspaces, profiles or templates..."
+            className="w-full bg-slate-950/50 border border-slate-800 rounded-full pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder:text-slate-600"
+          />
+        </div>
 
-      {/* Right Section: Mobile Menu + Workspace Switcher + Notifications + User Menu */}
-      <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+        {/* Right Section: Mobile Menu + Workspace Switcher + Notifications + User Menu */}
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
         {/* Mobile Menu Button */}
         <Button
           variant="ghost"
@@ -243,6 +297,7 @@ const AppNavbar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
           </DropdownMenuContent>
         </DropdownMenu>
 
+
         {/* Notifications */}
         <button className="relative p-2.5 rounded-full hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors">
           <Bell className="w-5 h-5" />
@@ -301,6 +356,22 @@ const AppNavbar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      </div>
+
+      {/* Progress Bar - Show when AVA Phase 1 is scrolled */}
+      {isAvaPage && avaProgress?.isScrolled && (
+        <div className="px-4 md:px-8 pb-1 flex items-center gap-2">
+          <div className="flex-1 bg-slate-800/50 rounded-full h-0.5 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
+              style={{ width: `${getProgressValue()}%` }}
+            />
+          </div>
+          <span className="text-[10px] font-medium text-slate-400 min-w-[2.5rem] text-right">
+            {Math.round(getProgressValue())}%
+          </span>
+        </div>
+      )}
 
       {/* Modals */}
       <WorkspaceSwitchConfirmDialog

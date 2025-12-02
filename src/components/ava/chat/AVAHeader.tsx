@@ -24,6 +24,7 @@ interface AVAHeaderProps {
   onReset?: () => void;
   offsetClassName?: string;
   className?: string;
+  isScrolled?: boolean;
 }
 
 export const AVAHeader = ({
@@ -33,6 +34,7 @@ export const AVAHeader = ({
   onReset,
   offsetClassName = "top-0",
   className,
+  isScrolled = false,
 }: AVAHeaderProps) => {
   const getStatusText = () => {
     switch (stage) {
@@ -41,7 +43,9 @@ export const AVAHeader = ({
         return "Let's get started";
       case "phase1-intro":
       case "phase1":
-        return `Question ${progress.currentQuestionIndex + 1} of ${progress.totalQuestions}`;
+        return `Question ${progress.currentQuestionIndex + 1} of ${
+          progress.totalQuestions
+        }`;
       case "transition":
         return "Phase 1 Complete";
       case "phase2":
@@ -67,7 +71,8 @@ export const AVAHeader = ({
       if (progress.currentQuestionIndex >= progress.totalQuestions) {
         return 100;
       }
-      const percentage = (progress.currentQuestionIndex / progress.totalQuestions) * 100;
+      const percentage =
+        (progress.currentQuestionIndex / progress.totalQuestions) * 100;
       // Cap at 100% - only reached when all questions are completed
       return Math.min(100, Math.max(0, isNaN(percentage) ? 0 : percentage));
     }
@@ -75,228 +80,137 @@ export const AVAHeader = ({
   };
 
   const headerClassName = cn(
-    "relative bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/50 overflow-hidden",
+    "relative bg-slate-900/95 backdrop-blur-xl border-b-2 border-slate-700/60 overflow-hidden transition-all duration-300",
+    isScrolled ? "h-6" : "h-16",
     offsetClassName,
     className
   );
 
   return (
     <div className={headerClassName}>
-      {/* Honeycomb Pattern Background - Aesthetic corners with modern design */}
-      <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
-        {/* Top Left Corner - Cyan/Blue theme */}
-        <div className="absolute top-0 left-0 w-48 h-48">
-          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-cyan-400/40">
-            <defs>
-              <pattern id="hexTopLeft" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="1.2"
-                  className="text-cyan-400/50"
+      <div className="relative w-[80%] mx-auto h-full flex items-center z-10">
+        {!isScrolled ? (
+          /* Full Header - Show when not scrolled */
+          <div className="w-full flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <img
+                  src={avaAvatar}
+                  alt="AVA Avatar"
+                  className="w-7 h-7 rounded-lg flex-shrink-0 object-cover"
                 />
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="0.6"
-                  className="text-blue-400/30"
-                  opacity="0.6"
-                />
-              </pattern>
-            </defs>
-            <rect width="200" height="200" fill="url(#hexTopLeft)" />
-          </svg>
-        </div>
-        
-        {/* Top Right Corner - Purple/Cyan theme */}
-        <div className="absolute top-0 right-0 w-48 h-48">
-          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-purple-400/40">
-            <defs>
-              <pattern id="hexTopRight" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="1.2"
-                  className="text-purple-400/50"
-                />
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="0.6"
-                  className="text-cyan-400/30"
-                  opacity="0.6"
-                />
-              </pattern>
-            </defs>
-            <rect width="200" height="200" fill="url(#hexTopRight)" />
-          </svg>
-        </div>
-        
-        {/* Bottom Left Corner - Blue/Purple theme */}
-        <div className="absolute bottom-0 left-0 w-48 h-48">
-          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-blue-400/40">
-            <defs>
-              <pattern id="hexBottomLeft" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="1.2"
-                  className="text-blue-400/50"
-                />
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="0.6"
-                  className="text-purple-400/30"
-                  opacity="0.6"
-                />
-              </pattern>
-            </defs>
-            <rect width="200" height="200" fill="url(#hexBottomLeft)" />
-          </svg>
-        </div>
-        
-        {/* Bottom Right Corner - Cyan/Blue theme */}
-        <div className="absolute bottom-0 right-0 w-48 h-48">
-          <svg width="100%" height="100%" viewBox="0 0 200 200" className="text-cyan-400/40">
-            <defs>
-              <pattern id="hexBottomRight" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="1.2"
-                  className="text-cyan-400/50"
-                />
-                <polygon 
-                  points="15,0 25,6.5 25,19.5 15,26 5,19.5 5,6.5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="0.6"
-                  className="text-blue-400/30"
-                  opacity="0.6"
-                />
-              </pattern>
-            </defs>
-            <rect width="200" height="200" fill="url(#hexBottomRight)" />
-          </svg>
-        </div>
-      </div>
-      
-      {/* Gradient Overlay for depth and aesthetic blend */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent via-transparent to-purple-500/8 pointer-events-none" />
-      
-      {/* Subtle corner glow effects */}
-      <div className="absolute top-0 left-0 w-48 h-48 bg-gradient-to-br from-cyan-500/5 to-transparent rounded-br-full blur-2xl pointer-events-none" />
-      <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-500/5 to-transparent rounded-bl-full blur-2xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/5 to-transparent rounded-tr-full blur-2xl pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-48 h-48 bg-gradient-to-tl from-cyan-500/5 to-transparent rounded-tl-full blur-2xl pointer-events-none" />
-      
-      <div className="relative w-[80%] mx-auto py-2 z-10">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <img 
-              src={avaAvatar} 
-              alt="AVA Avatar" 
-              className="w-10 h-10 rounded-xl flex-shrink-0 object-cover shadow-lg"
-            />
-            
-            <div className="flex-1 min-w-0">
-              <h1 className="font-heading font-bold text-lg bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-                AVA
-              </h1>
-              <p className="text-xs text-slate-400 font-medium truncate">
-                {getStatusText()}
-              </p>
-            </div>
-          </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    AVA
+                  </h1>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    {getStatusText()}
+                  </p>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {userName && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 border border-slate-700/50 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-                <span className="text-xs font-medium text-slate-200">{userName}</span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {userName && (
+                  <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-slate-800/50 border border-slate-700/50 rounded-full">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+                    <span className="text-[10px] text-slate-200">
+                      {userName}
+                    </span>
+                  </div>
+                )}
+
+                {/* Reset button */}
+                {(() => {
+                  const isValidStage =
+                    stage === "phase1" ||
+                    stage === "phase2" ||
+                    stage === "transition" ||
+                    stage === "complete";
+                  const hasResetHandler = typeof onReset === "function";
+
+                  if (!hasResetHandler || !isValidStage) {
+                    return null;
+                  }
+
+                  return (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                          title="Start New Session"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-slate-900 border-slate-700">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-slate-100">
+                            Start New Session?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="text-slate-400">
+                            This will clear all progress and start fresh. Your
+                            current session will be saved in browser history.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700">
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              if (typeof onReset === "function") {
+                                onReset();
+                              }
+                            }}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            Start New Session
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {(stage === "phase1" ||
+              stage === "phase2" ||
+              stage === "transition" ||
+              stage === "complete") && (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-slate-800/50 rounded-full h-1 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
+                    style={{ width: `${getProgressValue()}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-medium text-slate-400 min-w-[2.5rem] text-right">
+                  {Math.round(getProgressValue())}%
+                </span>
               </div>
             )}
-            
-            {/* Reset button - Show in all active phases (works in both dev and prod) */}
-            {(() => {
-              // Explicitly check if onReset is provided and stage is valid
-              const isValidStage = stage === "phase1" || stage === "phase2" || stage === "transition" || stage === "complete";
-              const hasResetHandler = typeof onReset === "function";
-              
-              // Only render if both conditions are met (production-safe check)
-              if (!hasResetHandler || !isValidStage) {
-                return null;
-              }
-              
-              return (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
-                      title="Start New Session"
-                      aria-label="Start New Session"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-slate-900 border-slate-700">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="text-slate-100">Start New Session?</AlertDialogTitle>
-                      <AlertDialogDescription className="text-slate-400">
-                        This will clear all progress and start fresh. Your current session will be saved in browser history.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700">Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={() => {
-                          // Production-safe: Ensure onReset is still a function before calling
-                          if (typeof onReset === "function") {
-                            onReset();
-                          }
-                        }} 
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        Start New Session
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              );
-            })()}
           </div>
-        </div>
-
-        {(stage === "phase1" || stage === "phase2" || stage === "transition" || stage === "complete") && (
-          <div className="mt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">
-                Progress
-              </span>
-              <span className="text-xs font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-                {Math.round(getProgressValue())}%
-              </span>
-            </div>
-            <div className="w-full bg-slate-800/50 rounded-full h-1.5 overflow-hidden mt-1">
-              <div 
-                className="h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 transition-all duration-500 ease-out"
+        ) : /* Scrolled State - Show only progress bar and percentage */
+        stage === "phase1" ||
+          stage === "phase2" ||
+          stage === "transition" ||
+          stage === "complete" ? (
+          <div className="flex items-center gap-2 w-full">
+            <div className="flex-1 bg-slate-800/50 rounded-full h-0.5 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
                 style={{ width: `${getProgressValue()}%` }}
               />
             </div>
+            <span className="text-[10px] font-medium text-slate-400 min-w-[2.5rem] text-right">
+              {Math.round(getProgressValue())}%
+            </span>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
 };
-
