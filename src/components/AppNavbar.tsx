@@ -214,10 +214,12 @@ const AppNavbar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
       (subscription as any).hasUnusedSubscription ||
       hasRecentPayment);
 
+  const isCollapsed = isAvaPage && avaProgress?.isScrolled;
+  
   return (
-    <nav className={`${isAvaPage && avaProgress?.isScrolled ? "pb-1" : ""} px-4 md:px-8 flex flex-col border-b border-slate-800/50 bg-slate-900/20 backdrop-blur-sm z-20 w-full transition-all duration-300`}>
+    <nav className={`${isCollapsed ? "pb-1" : ""} px-4 md:px-8 flex flex-col border-b border-slate-800/50 bg-slate-900/20 backdrop-blur-sm z-20 w-full transition-all duration-300`}>
       {/* Main Navbar Content */}
-      <div className="h-20 flex items-center justify-between gap-4">
+      <div className={`${isCollapsed ? "h-0 overflow-hidden" : "h-20"} flex items-center justify-between gap-4 transition-all duration-300`}>
         {/* Left Section: Search Bar */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -355,21 +357,18 @@ const AppNavbar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+        </div>
       </div>
 
-      {/* Progress Bar - Show when AVA Phase 1 is scrolled */}
+      {/* Progress Bar - Show when AVA Phase 1 is scrolled, spans full width */}
       {isAvaPage && avaProgress?.isScrolled && (
-        <div className="px-4 md:px-8 pb-1 flex items-center gap-2">
+        <div className="w-full px-0 pb-1 flex items-center">
           <div className="flex-1 bg-slate-800/50 rounded-full h-0.5 overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
               style={{ width: `${getProgressValue()}%` }}
             />
           </div>
-          <span className="text-[10px] font-medium text-slate-400 min-w-[2.5rem] text-right">
-            {Math.round(getProgressValue())}%
-          </span>
         </div>
       )}
 

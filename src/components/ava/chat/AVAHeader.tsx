@@ -88,9 +88,9 @@ export const AVAHeader = ({
 
   return (
     <div className={headerClassName}>
-      <div className="relative w-[80%] mx-auto h-full flex items-center z-10">
-        {!isScrolled ? (
-          /* Full Header - Show when not scrolled */
+      {!isScrolled && (
+        <div className="relative w-[80%] mx-auto h-full flex items-center z-10 transition-all duration-300">
+          {/* Full Header - Show when not scrolled */}
           <div className="w-full flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -193,24 +193,8 @@ export const AVAHeader = ({
               </div>
             )}
           </div>
-        ) : /* Scrolled State - Show only progress bar and percentage */
-        stage === "phase1" ||
-          stage === "phase2" ||
-          stage === "transition" ||
-          stage === "complete" ? (
-          <div className="flex items-center gap-2 w-full">
-            <div className="flex-1 bg-slate-800/50 rounded-full h-0.5 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
-                style={{ width: `${getProgressValue()}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-medium text-slate-400 min-w-[2.5rem] text-right">
-              {Math.round(getProgressValue())}%
-            </span>
-          </div>
-        ) : null}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

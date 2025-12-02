@@ -281,6 +281,24 @@ const AVA = () => {
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // Sync isHeaderScrolled with AppNavbar via localStorage
+  useEffect(() => {
+    if (!sessionId) return;
+    
+    const progressData = {
+      isScrolled: isHeaderScrolled,
+      currentQuestionIndex: phase1Progress.currentQuestionIndex,
+      totalQuestions: phase1Progress.totalQuestions,
+    };
+    
+    localStorage.setItem("avaProgressData", JSON.stringify(progressData));
+    
+    // Dispatch custom event for AppNavbar
+    window.dispatchEvent(
+      new CustomEvent("avaProgressUpdate", { detail: progressData })
+    );
+  }, [isHeaderScrolled, phase1Progress, sessionId]);
+
 
   // Attach scroll listener directly to chatContainerRef and check all scrollable elements
   useEffect(() => {
@@ -1054,7 +1072,7 @@ const AVA = () => {
         {/* Right position accounts for scrollbar width so scrollbar is visible and not hidden */}
         <div
           className={`fixed top-20 z-50 bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/50 transition-all duration-500 ease-in-out ${
-            showAvaHeader
+            showAvaHeader && !isHeaderScrolled
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-full pointer-events-none"
           }`}
