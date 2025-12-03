@@ -20,6 +20,12 @@ interface AmplifierStateEntry {
   updatedAt: number;
 }
 
+// interface AmplifierStateEntry {
+//   formValues: Record<string, FormValue>;
+//   scrollPosition: number;
+//   updatedAt: number;
+// }
+
 interface AmplifierStateStore {
   states: Partial<Record<AmplifierKey, AmplifierStateEntry>>;
   updateFormState: (key: AmplifierKey, values: Record<string, FormValue>) => void;
@@ -27,6 +33,14 @@ interface AmplifierStateStore {
   clearState: (key: AmplifierKey) => void;
   clearAll: () => void;
 }
+
+// interface AmplifierStateStore {
+//   states: Partial<Record<AmplifierKey, AmplifierStateEntry>>;
+//   updateFormState: (key: AmplifierKey, values: Record<string, FormValue>) => void;
+//   setScrollPosition: (key: AmplifierKey, position: number) => void;
+//   clearState: (key: AmplifierKey) => void;
+//   clearAll: () => void;
+// }
 
 const shallowEqual = (
   a: Record<string, FormValue> | undefined,

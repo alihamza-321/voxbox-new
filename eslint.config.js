@@ -36,7 +36,7 @@ export default defineConfig([
       'no-unused-vars': 'off', // Turn off base rule as it conflicts with @typescript-eslint version
       
       // Detect commented code
-      'no-commented-code/no-commented-code': 'warn',
+      'no-commented-code/no-commented-code': 'error',
       
       // Warn about warning comments (TODO, FIXME, etc.)
       'no-warning-comments': [
