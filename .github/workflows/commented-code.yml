@@ -1,4 +1,4 @@
-name: Commented code Detection
+name: Commented Code Detection
 
 on:
   push:
@@ -14,18 +14,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node.js environment
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
+      # 3️⃣ Install npm dependencies
       - name: Install dependencies
         run: npm ci
 
+      # 4️⃣ Run ESLint to detect commented-out code
       - name: Run Commented-Out Code Detector
         run: npm run check-commented-code
         continue-on-error: false

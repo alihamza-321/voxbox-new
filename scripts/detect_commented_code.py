@@ -4,7 +4,7 @@ import sys
 
 TARGET_DIR = "src"   # change this if your code is not inside /src
 
-# Regex: detects commented-out code like: // functionCall() or // let x = ...
+
 commented_code_pattern = re.compile(r'^\s*#.*[a-zA-Z0-9_]+\s*\(.*\)')
 
 def scan_file(filepath):
@@ -18,7 +18,7 @@ def scan_file(filepath):
             commented_lines.append(line.strip())
 
     if commented_lines:
-        print(f"\n❌ Commented-out code found in: {filepath}")
+        print(f"\n Commented-out code found in: {filepath}")
         for line in commented_lines:
             print(f"  → {line}")
         return True
@@ -44,8 +44,8 @@ if __name__ == "__main__":
     errors_found = scan_directory(TARGET_DIR)
 
     if errors_found:
-        print("\n❌ Build failed because commented-out code was detected.")
+        print("\n Build failed because commented-out code was detected.")
         sys.exit(1)
 
-    print("✅ No commented-out code found!")
+    print(" No commented-out code found!")
     sys.exit(0)
