@@ -11,14 +11,14 @@ function getApiBaseUrl(): string {
   // Check if we're accessing via IP address (not localhost)
   const currentHost = window.location.hostname;
   const currentProtocol = window.location.protocol;
-  
+
   // If accessing via IP address (not localhost), use the same IP for API
-  if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+  if (currentHost !== "localhost" && currentHost !== "127.0.0.1") {
     return `${currentProtocol}//${currentHost}:3000/api/v1`;
   }
 
   // Default to localhost
-  return 'http://localhost:3000/api/v1';
+  return "http://localhost:3000/api/v1";
 }
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -27,4 +27,3 @@ export const API_BASE_URL = getApiBaseUrl();
 export default {
   baseURL: API_BASE_URL,
 };
-

@@ -37,7 +37,7 @@ export const AVAChatInput = ({
 
   return (
     <div 
-      className="fixed bottom-0 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/50 z-50 shadow-2xl transition-all duration-300"
+      className="fixed bottom-0 bg-white backdrop-blur-xl border-t border-gray-200 z-50 shadow-2xl transition-all duration-300"
       style={{
         left: `${leftOffset}px`,
         width: `calc(100vw - ${leftOffset}px)`,
@@ -53,7 +53,7 @@ export const AVAChatInput = ({
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 disabled={disabled}
-                className="min-h-[56px] max-h-[140px] resize-none bg-slate-800/50 border-2 border-slate-700/50 focus:border-cyan-500/50 rounded-xl text-sm pr-4 shadow-sm transition-all text-slate-200 placeholder:text-slate-500"
+                className="min-h-[56px] max-h-[140px] resize-none bg-white border-2 border-gray-300 focus:border-gray-500 rounded-xl text-sm pr-4 shadow-sm transition-all text-gray-900 placeholder:text-gray-500 overflow-y-auto chatgpt-scrollbar"
                 rows={1}
               />
             </div>
@@ -61,13 +61,13 @@ export const AVAChatInput = ({
               onClick={handleSubmit}
               disabled={!value.trim() || disabled}
               size="icon"
-              className="h-14 w-14 bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 text-white shrink-0 rounded-xl shadow-md hover:shadow-lg shadow-cyan-500/30 transition-all disabled:opacity-50"
+              className="h-14 w-14 bg-gray-900 hover:bg-gray-800 text-white shrink-0 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50"
             >
               <Send className="w-5 h-5" />
             </Button>
           </div>
-          <div className="text-xs text-slate-400 mt-2 text-center">
-            <kbd className="px-1.5 py-0.5 bg-slate-800/50 rounded text-[10px] border border-slate-700/50 text-slate-300">Enter</kbd> to send • <kbd className="px-1.5 py-0.5 bg-slate-800/50 rounded text-[10px] border border-slate-700/50 text-slate-300">Shift+Enter</kbd> new line
+          <div className="text-xs text-gray-600 mt-2 text-center">
+            <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] border border-gray-300 text-gray-700">Enter</kbd> to send • <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] border border-gray-300 text-gray-700">Shift+Enter</kbd> new line
           </div>
         </div>
       </div>

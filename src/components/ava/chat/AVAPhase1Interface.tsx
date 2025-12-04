@@ -27,6 +27,8 @@ import {
   X,
   Loader2,
   AlertCircle,
+  Copy,
+  CheckCheck,
 } from "lucide-react";
 import { useAvaNameResponseStore } from "@/stores/avaNameResponseStore";
 import {
@@ -96,6 +98,51 @@ export const AVAPhase1Interface = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef(false);
+  const lastUserMessageRef = useRef<HTMLDivElement>(null);
+  const examplesContainerRef = useRef<HTMLDivElement>(null);
+  const lastExampleRef = useRef<HTMLButtonElement>(null);
+
+  // Helper function to scroll to bottom, waiting for DOM updates (especially for messages with examples)
+  const scrollToBottom = (delay: number = 0) => {
+    // Check if the last message has examples - if so, we need extra time for them to render
+    const lastMessage = messages[messages.length - 1];
+    const hasExamples =
+      lastMessage?.examples && lastMessage.examples.length > 0;
+    const extraDelay = hasExamples ? 200 : 0; // Extra delay when examples are present
+
+    // Use requestAnimationFrame multiple times to ensure DOM is fully updated
+    // This is especially important when messages have examples that need to render
+    const performScroll = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Double RAF ensures React has rendered and browser has laid out
+          // If examples are present, wait one more frame to ensure they're fully rendered
+          if (hasExamples) {
+            requestAnimationFrame(() => {
+              messagesEndRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "end",
+                inline: "nearest",
+              });
+            });
+          } else {
+            messagesEndRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "end",
+              inline: "nearest",
+            });
+          }
+        });
+      });
+    };
+
+    const totalDelay = delay + extraDelay;
+    if (totalDelay > 0) {
+      setTimeout(performScroll, totalDelay);
+    } else {
+      performScroll();
+    }
+  };
   const prevWorkspaceIdRef = useRef<string | undefined>(currentWorkspace?.id);
   const prevSessionIdRef = useRef<string | undefined>(sessionId);
   const [sidebarOffset, setSidebarOffset] = useState(leftOffset);
@@ -249,6 +296,7 @@ export const AVAPhase1Interface = ({
     }
   }, [userName, onUserNameChange]);
   const [showHeader, setShowHeader] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -841,14 +889,7 @@ export const AVAPhase1Interface = ({
       previousMessageCount.current = currentMessageCount;
       lastMessageContentLength.current = lastMessageContent.length;
       setTimeout(() => {
-        // Production-safe: Check stage before scrolling
-        const currentStage = stageRef.current || stage;
-        if (
-          currentStage !== "processing-name" &&
-          currentStage !== "showing-intro"
-        ) {
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
+        // Don't auto-scroll - show start of AVA response, let user scroll manually
       }, 300);
       return;
     }
@@ -993,6 +1034,32 @@ export const AVAPhase1Interface = ({
           const currentScrollY = scrollContainer?.scrollTop || 0;
           const lastScroll = lastScrollYRef.current;
 
+          // Track scroll state for compact header mode
+          const scrolled = currentScrollY > 0;
+          setIsScrolled(scrolled);
+
+          // Update progress data for AppNavbar when scrolled
+          if (scrolled && stage === "questions") {
+            const progressData = {
+              isScrolled: true,
+              currentQuestionIndex: Math.max(0, (progress?.current || 0) - 1),
+              totalQuestions: progress?.total || 27,
+            };
+            localStorage.setItem(
+              "avaProgressData",
+              JSON.stringify(progressData)
+            );
+            window.dispatchEvent(
+              new CustomEvent("avaProgressUpdate", { detail: progressData })
+            );
+          } else if (!scrolled) {
+            // Clear progress data when at top
+            localStorage.removeItem("avaProgressData");
+            window.dispatchEvent(
+              new CustomEvent("avaProgressUpdate", { detail: null })
+            );
+          }
+
           // Always show header when at the top (within 50px)
           if (currentScrollY < 50) {
             setShowHeader(true);
@@ -1033,6 +1100,83 @@ export const AVAPhase1Interface = ({
       }
     };
   }, []);
+
+  // Scroll user message to appear right below AVA Header when user submits
+  useEffect(() => {
+    // Only scroll when a new user message is added
+    if (stage === "questions" && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.role === "user" && lastUserMessageRef.current) {
+        const scrollToUserMessage = () => {
+          if (!lastUserMessageRef.current || !scrollContainerRef.current)
+            return;
+
+          // Calculate AVA Header position dynamically
+          // AVA Header is fixed at top-20 (80px) below AppNavbar
+          // Header height: h-16 (64px) when not scrolled, h-6 (24px) when scrolled
+          const navbarHeight = 80; // AppNavbar height (top-20 = 80px)
+
+          // Try to find the AVA Header element (it's in the parent component)
+          const avaHeader = document.querySelector(
+            '[class*="fixed top-20"]'
+          ) as HTMLElement;
+          let avaHeaderHeight = isScrolled ? 24 : 64; // Default fallback
+
+          if (avaHeader) {
+            const actualHeight = avaHeader.getBoundingClientRect().height;
+            if (actualHeight > 0) {
+              avaHeaderHeight = actualHeight;
+            }
+          }
+
+          const spacing = 16; // Small aesthetic spacing below header
+          const targetOffset = navbarHeight + avaHeaderHeight + spacing;
+
+          // Get the position of the user message relative to the scroll container
+          const containerRect =
+            scrollContainerRef.current.getBoundingClientRect();
+          const messageRect =
+            lastUserMessageRef.current.getBoundingClientRect();
+
+          // Calculate scroll position
+          const currentScrollTop = scrollContainerRef.current.scrollTop;
+          const messageOffsetTop =
+            messageRect.top - containerRect.top + currentScrollTop;
+          const targetScrollTop = messageOffsetTop - targetOffset;
+
+          scrollContainerRef.current.scrollTo({
+            top: Math.max(0, targetScrollTop),
+            behavior: "smooth",
+          });
+        };
+
+        // Use double requestAnimationFrame for smooth rendering
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setTimeout(scrollToUserMessage, 100); // Small delay to ensure DOM is updated
+          });
+        });
+      }
+      // Don't auto-scroll when AVA responds - show start of response, let user scroll manually
+    }
+  }, [messages.length, stage, isScrolled]);
+
+  // Scroll to last example when examples are expanded
+  useEffect(() => {
+    if (showExamples && lastExampleRef.current) {
+      // Use multiple requestAnimationFrame to ensure DOM is fully updated
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Scroll to the last example to ensure it's fully visible
+          lastExampleRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+            inline: "nearest",
+          });
+        });
+      });
+    }
+  }, [showExamples]);
 
   // Ref to track last save time and pending save
   const lastSaveTimeRef = useRef<number>(0);
@@ -1646,6 +1790,7 @@ export const AVAPhase1Interface = ({
   // Helper to add message with typing animation
   const addMessage = async (message: MessageType, delay: number = 1000) => {
     setIsTyping(true);
+
     await new Promise((resolve) => setTimeout(resolve, delay));
     setIsTyping(false);
     setMessages((prev) => {
@@ -1667,6 +1812,9 @@ export const AVAPhase1Interface = ({
       }
       return [...prev, message];
     });
+
+    // Don't auto-scroll when AVA responds - show start of response, let user scroll manually
+    // Only scroll to top when user submits (handled in handleSubmit)
   };
 
   const addMessageImmediate = (message: MessageType) => {
@@ -1685,6 +1833,8 @@ export const AVAPhase1Interface = ({
       }
       return [...prev, message];
     });
+
+    // Don't auto-scroll when AVA responds - show start of response, let user scroll manually
   };
 
   // Render Activate Now messages as a single chunk
@@ -2352,6 +2502,8 @@ export const AVAPhase1Interface = ({
     setIsSubmitting(true);
     setIsTyping(true); // Show typing indicator
 
+    // Scroll will be handled by useEffect watching messages
+
     // CRITICAL: Set awaiting question state BEFORE submitting answer
     // This ensures we can recover if user refreshes during the typing period
     if (sessionId) {
@@ -2668,7 +2820,17 @@ export const AVAPhase1Interface = ({
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = "auto";
     const newHeight = Math.min(textarea.scrollHeight, 200);
-    textarea.style.height = `${newHeight}px`;
+    textarea.style.height = `${Math.max(44, newHeight)}px`;
+
+    // Smooth scroll to bottom when content is added
+    if (textarea.scrollHeight > textarea.clientHeight) {
+      requestAnimationFrame(() => {
+        textarea.scrollTo({
+          top: textarea.scrollHeight,
+          behavior: "smooth",
+        });
+      });
+    }
   };
 
   // Handle example selection
@@ -2678,6 +2840,18 @@ export const AVAPhase1Interface = ({
     setTimeout(() => {
       if (inputRef.current) {
         resizeTextarea(inputRef.current);
+        // Smooth scroll to bottom when example is selected
+        requestAnimationFrame(() => {
+          if (
+            inputRef.current &&
+            inputRef.current.scrollHeight > inputRef.current.clientHeight
+          ) {
+            inputRef.current.scrollTo({
+              top: inputRef.current.scrollHeight,
+              behavior: "smooth",
+            });
+          }
+        });
       }
     }, 0);
     inputRef.current?.focus();
@@ -2687,6 +2861,18 @@ export const AVAPhase1Interface = ({
   useEffect(() => {
     if (inputRef.current) {
       resizeTextarea(inputRef.current);
+      // Smooth scroll to bottom when inputValue changes programmatically
+      requestAnimationFrame(() => {
+        if (
+          inputRef.current &&
+          inputRef.current.scrollHeight > inputRef.current.clientHeight
+        ) {
+          inputRef.current.scrollTo({
+            top: inputRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
+      });
     }
   }, [inputValue]);
 
@@ -2746,6 +2932,30 @@ export const AVAPhase1Interface = ({
   const handleCancelEdit = () => {
     setEditingMessageId(null);
     setEditedContent("");
+  };
+
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
+  const handleCopyAnswer = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      toast({
+        title: "Copied!",
+        description: "Answer copied to clipboard",
+      });
+      // Reset checkmark after 2 seconds
+      setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   // Check if a user message is an answer (not the name)
@@ -2843,12 +3053,12 @@ export const AVAPhase1Interface = ({
         className={`${
           hideHeader ? "" : "flex-1 overflow-y-auto chatgpt-scrollbar"
         } px-[20%] py-8`}
-        style={{ paddingBottom: "100px" }}
+        style={{ paddingBottom: "140px" }}
       >
         {/* Header - Sticky at top with scroll-based visibility - Hide when parent handles header */}
         {!hideHeader && (
           <div
-            className={`sticky top-0 z-50 bg-slate-900/95 backdrop-blur-sm transition-transform duration-300 ${
+            className={`sticky top-0 z-50 bg-white backdrop-blur-sm transition-transform duration-300 border-b border-gray-200 ${
               showHeader ? "translate-y-0" : "-translate-y-full"
             }`}
             style={{
@@ -2865,11 +3075,12 @@ export const AVAPhase1Interface = ({
               }}
               offsetClassName=""
               onReset={handleReset}
+              isScrolled={isScrolled}
             />
           </div>
         )}
 
-        <div className="w-full space-y-6">
+        <div className="w-full">
           {/* Display all messages - filter duplicates by ID and content */}
           {messages
             .filter((msg, index, self) => {
@@ -2889,333 +3100,360 @@ export const AVAPhase1Interface = ({
               }
               return true;
             })
-            .map((msg, msgIndex) => (
-              <div
-                key={`${msg.id}-${msgIndex}`}
-                data-question-id={msg.isQuestion ? msg.id : undefined}
-              >
-                {msg.role === "ava" ? (
-                  /* AVA Message - Left Side - Avatar removed */
-                  <div className="flex gap-3 items-start">
-                    <div className="w-[70%]">
-                      <div className=" px-4 py-3">
-                        {(() => {
-                          // Check if content is HTML
-                          const isHTML =
-                            typeof msg.content === "string" &&
-                            /<[^>]+>/.test(msg.content);
-                          return (
-                            <div
-                              className={`text-[15px] leading-relaxed text-slate-200 ${
-                                isHTML ? "" : "whitespace-pre-wrap"
-                              }`}
-                            >
-                              {isHTML ? (
-                                <div
-                                  className="ava-message-content"
-                                  dangerouslySetInnerHTML={{
-                                    __html: msg.content,
-                                  }}
-                                />
-                              ) : (
-                                msg.content
-                              )}
-                            </div>
-                          );
-                        })()}
+            .map((msg, msgIndex, filteredArray) => {
+              // Check if this is the last user message in the filtered array
+              // Find all user messages in the filtered array
+              const userMessagesInFiltered = filteredArray
+                .map((m, idx) => (m.role === "user" ? idx : -1))
+                .filter((idx) => idx >= 0);
+              const lastUserMessageIndex =
+                userMessagesInFiltered[userMessagesInFiltered.length - 1];
+              const isLastUserMessage =
+                msg.role === "user" && msgIndex === lastUserMessageIndex;
 
-                        {/* Show video if present */}
-                        {msg.videoUrl && (
-                          <div className="mt-4">
-                            <div
-                              className="relative w-full bg-black rounded-lg overflow-hidden"
-                              style={{ paddingTop: "56.25%" }}
-                            >
-                              <iframe
-                                src={(() => {
-                                  const match = msg.videoUrl.match(
-                                    /vimeo\.com\/(\d+)(?:\/([a-zA-Z0-9]+))?/
-                                  );
-                                  if (!match) return "";
-                                  const videoId = match[1];
-                                  const privacyHash = match[2];
-                                  let embedUrl = `https://player.vimeo.com/video/${videoId}`;
-                                  const params = new URLSearchParams({
-                                    title: "0",
-                                    byline: "0",
-                                    portrait: "0",
-                                    autoplay: "0",
-                                  });
-                                  if (privacyHash) params.set("h", privacyHash);
-                                  embedUrl += "?" + params.toString();
-                                  return embedUrl;
-                                })()}
-                                className="absolute top-0 left-0 w-full h-full"
-                                frameBorder="0"
-                                allow="autoplay; fullscreen; picture-in-picture"
-                                allowFullScreen
-                                title="AVA Video"
-                              />
-                            </div>
-                            {/* Confirm Button - Below video when showing intro */}
-                            {stage === "showing-intro" &&
-                              msg.content?.includes(
-                                "Before we proceed, please watch this video"
-                              ) && (
-                                <div className="flex justify-center mt-6 animate-fade-in">
-                                  <Button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-                                      await startPhase1Questions();
+              return (
+                <div
+                  key={`${msg.id}-${msgIndex}`}
+                  data-question-id={msg.isQuestion ? msg.id : undefined}
+                  ref={isLastUserMessage ? lastUserMessageRef : undefined}
+                >
+                  {msg.role === "ava" ? (
+                    /* AVA Message - Left Side - Avatar removed */
+                    <div className="flex gap-3 items-start">
+                      <div className="w-[70%]">
+                        <div className=" px-4 py-3">
+                          {(() => {
+                            // Check if content is HTML
+                            const isHTML =
+                              typeof msg.content === "string" &&
+                              /<[^>]+>/.test(msg.content);
+                            return (
+                              <div>
+                                {isHTML ? (
+                                  <div
+                                    className="ava-message-content text-gray-900"
+                                    dangerouslySetInnerHTML={{
+                                      __html: msg.content,
                                     }}
-                                    size="lg"
-                                    disabled={isSubmitting}
-                                    className="w-full h-14 text-lg bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:brightness-110 transform hover:-translate-y-0.5 transition duration-300 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {isSubmitting ? (
-                                      <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                                        Loading...
-                                      </>
-                                    ) : (
-                                      "Ready to move on?"
-                                    )}
-                                  </Button>
-                                </div>
-                              )}
-                            {/* Start Phase 2 Button - Centered below video when Phase 1 is complete */}
-                            {stage === "complete" &&
-                              !hideStartPhase2Button &&
-                              msg.content?.includes(
-                                "Phase 1 is now complete"
-                              ) && (
-                                <div className="flex justify-center mt-6 animate-fade-in">
-                                  <Button
-                                    ref={startPhase2ButtonRef}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-
-                                      const scrollPayload = {
-                                        scrollY: window.scrollY,
-                                        scrollX: window.scrollX,
-                                        timestamp: Date.now(),
-                                      };
-
-                                      sessionStorage.setItem(
-                                        "ava-phase2-transition-scroll",
-                                        JSON.stringify(scrollPayload)
-                                      );
-                                      sessionStorage.setItem(
-                                        "ava-phase2-hide-phase1-messages",
-                                        "true"
-                                      );
-
-                                      requestAnimationFrame(() => {
-                                        window.scrollTo({
-                                          top: scrollPayload.scrollY,
-                                          left: scrollPayload.scrollX,
-                                        });
-                                      });
-
-                                      onPhase1Complete(userName || "User");
-                                    }}
-                                    size="lg"
-                                    className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-xl hover:scale-105 transition-all duration-200 px-8 py-6 text-lg font-semibold shadow-cyan-500/30"
-                                  >
-                                    Start Phase 2
-                                  </Button>
-                                </div>
-                              )}
-                          </div>
-                        )}
-
-                        {/* Show examples if present */}
-                        {msg.examples && msg.examples.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-slate-700/50">
-                            <button
-                              onClick={() => {
-                                const currentMsgId = msg.id;
-                                const isLastQuestion =
-                                  messages.filter((m) => m.isQuestion).pop()
-                                    ?.id === currentMsgId;
-                                if (isLastQuestion) {
-                                  setShowExamples(!showExamples);
-                                }
-                              }}
-                              className="text-xs font-medium text-cyan-400 hover:text-blue-400 flex items-center gap-1 mb-2"
-                            >
-                              <ChevronDown
-                                className={`w-3 h-3 transition-transform ${
-                                  showExamples &&
-                                  messages.filter((m) => m.isQuestion).pop()
-                                    ?.id === msg.id
-                                    ? "rotate-180"
-                                    : ""
-                                }`}
-                              />
-                              Show examples
-                            </button>
-                            {showExamples &&
-                              messages.filter((m) => m.isQuestion).pop()?.id ===
-                                msg.id && (
-                                <div className="space-y-2">
-                                  {msg.examples.map((example, idx) => (
-                                    <button
-                                      key={idx}
-                                      onClick={() =>
-                                        handleExampleClick(example)
-                                      }
-                                      className="block w-full text-left px-3 py-2 text-sm bg-slate-800/50 hover:bg-slate-700/50 rounded-lg text-slate-200 transition-colors border border-slate-700/50"
-                                    >
-                                      {example}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* User Message - Right Side */
-                  <div className="flex gap-3 items-start justify-end">
-                    <div className="w-[70%] flex flex-col items-end gap-2">
-                      {(() => {
-                        // Check if this is a name message (not an answer)
-                        // Use the isName flag first (most reliable), then fallback to position check
-                        const messagesBeforeThis = messages.slice(0, msgIndex);
-                        const hasQuestionBefore = messagesBeforeThis.some(
-                          (m) => m.isQuestion && m.role === "ava"
-                        );
-                        const isFirstUserMessage = !messagesBeforeThis.some(
-                          (m) => m.role === "user"
-                        );
-                        const isNameMessage =
-                          msg.isName === true ||
-                          (!hasQuestionBefore && isFirstUserMessage);
-
-                        return (
-                          <>
-                            {editingMessageId === msg.id ? (
-                              <div className="flex flex-col gap-3 w-full">
-                                <Textarea
-                                  value={editedContent}
-                                  onChange={(e) =>
-                                    setEditedContent(e.target.value)
-                                  }
-                                  className="min-h-[100px] text-[15px] leading-relaxed w-full bg-slate-800/50 border border-slate-700/50 focus:border-cyan-500/50 focus:ring-0 focus:outline-none rounded-lg px-4 py-3 transition-all duration-200 resize-none placeholder:text-slate-500 text-slate-200"
-                                  placeholder="Edit your answer here..."
-                                  autoFocus
-                                />
-                                {/* Action buttons inside the same container when editing */}
-                                {isAnswerMessage(msg, msgIndex) && (
-                                  <div className="flex gap-2.5 items-center justify-end">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={handleCancelEdit}
-                                      className="group border-2 bg-slate-800/50 hover:bg-slate-700/50 border-slate-700/50 hover:border-slate-600/50 text-slate-300 hover:text-slate-200 text-xs font-medium h-9 px-4 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
-                                    >
-                                      <X className="w-3.5 h-3.5 mr-1.5" />
-                                      <span className="relative z-10">
-                                        Cancel
-                                      </span>
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleSaveEdit(msg.id)}
-                                      disabled={
-                                        isSavingEdit || !editedContent.trim()
-                                      }
-                                      className="group relative bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white text-xs font-medium h-9 px-5 shadow-md hover:shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
-                                    >
-                                      {isSavingEdit ? (
-                                        <>
-                                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                                          <span>Saving...</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Check className="w-3.5 h-3.5 mr-1.5 transition-transform group-hover:scale-110" />
-                                          <span className="relative z-10">
-                                            Save Changes
-                                          </span>
-                                        </>
-                                      )}
-                                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-300" />
-                                    </Button>
-                                  </div>
+                                  />
+                                ) : (
+                                  msg.content
                                 )}
                               </div>
-                            ) : (
-                              <>
-                                <div className="flex gap-3 items-end">
-                                  <div
-                                    className={`bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl rounded-tr-sm px-4 py-3 ${
-                                      isNameMessage
-                                        ? "w-fit max-w-full"
-                                        : "w-full"
-                                    }`}
-                                  >
-                                    {(() => {
-                                      // Check if content is HTML (user messages typically aren't, but check anyway)
-                                      const isHTML =
-                                        typeof msg.content === "string" &&
-                                        /<[^>]+>/.test(msg.content);
-                                      return (
-                                        <p
-                                          className={`text-[15px] leading-relaxed text-slate-200 ${
-                                            isHTML ? "" : "whitespace-pre-wrap"
-                                          }`}
-                                        >
-                                          {isHTML ? (
-                                            <span
-                                              dangerouslySetInnerHTML={{
-                                                __html: msg.content,
-                                              }}
-                                            />
-                                          ) : (
-                                            msg.content
-                                          )}
-                                        </p>
-                                      );
-                                    })()}
-                                  </div>
-                                  {/* User Initials Avatar - Removed */}
-                                </div>
+                            );
+                          })()}
 
-                                {/* Edit Button - Only show for answer messages (not name) when NOT editing */}
-                                {isAnswerMessage(msg, msgIndex) && (
-                                  <div className="flex gap-2 items-center w-full justify-end">
+                          {/* Show video if present */}
+                          {msg.videoUrl && (
+                            <div className="mt-4">
+                              <div
+                                className="relative w-full bg-black rounded-lg overflow-hidden"
+                                style={{ paddingTop: "56.25%" }}
+                              >
+                                <iframe
+                                  src={(() => {
+                                    const match = msg.videoUrl.match(
+                                      /vimeo\.com\/(\d+)(?:\/([a-zA-Z0-9]+))?/
+                                    );
+                                    if (!match) return "";
+                                    const videoId = match[1];
+                                    const privacyHash = match[2];
+                                    let embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                                    const params = new URLSearchParams({
+                                      title: "0",
+                                      byline: "0",
+                                      portrait: "0",
+                                      autoplay: "0",
+                                    });
+                                    if (privacyHash)
+                                      params.set("h", privacyHash);
+                                    embedUrl += "?" + params.toString();
+                                    return embedUrl;
+                                  })()}
+                                  className="absolute top-0 left-0 w-full h-full"
+                                  frameBorder="0"
+                                  allow="autoplay; fullscreen; picture-in-picture"
+                                  allowFullScreen
+                                  title="AVA Video"
+                                />
+                              </div>
+                              {/* Confirm Button - Below video when showing intro */}
+                              {stage === "showing-intro" &&
+                                msg.content?.includes(
+                                  "Before we proceed, please watch this video"
+                                ) && (
+                                  <div className="flex justify-center mt-6 animate-fade-in">
                                     <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleEditAnswer(msg.id, msg.content)
-                                      }
-                                      className="group relative border-2 bg-slate-800/50 hover:bg-gradient-to-r hover:from-cyan-500/10 hover:to-blue-500/10 border-cyan-500/30 hover:border-cyan-500/60 text-slate-300 hover:text-cyan-400 text-xs font-medium h-9 px-4 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        await startPhase1Questions();
+                                      }}
+                                      size="lg"
+                                      disabled={isSubmitting}
+                                      className="w-full h-14 text-lg bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:brightness-110 transform hover:-translate-y-0.5 transition duration-300 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                      <Edit className="w-3.5 h-3.5 mr-1.5 transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
-                                      <span className="relative z-10">
-                                        Edit
-                                      </span>
-                                      <span className="absolute inset-0 bg-gradient-to-r from-vox-purple/0 via-vox-purple/10 to-indigo/0 opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-300" />
+                                      {isSubmitting ? (
+                                        <>
+                                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                          Loading...
+                                        </>
+                                      ) : (
+                                        "Ready to move on?"
+                                      )}
                                     </Button>
                                   </div>
                                 )}
-                              </>
-                            )}
-                          </>
-                        );
-                      })()}
+                              {/* Start Phase 2 Button - Centered below video when Phase 1 is complete */}
+                              {stage === "complete" &&
+                                !hideStartPhase2Button &&
+                                msg.content?.includes(
+                                  "Phase 1 is now complete"
+                                ) && (
+                                  <div className="flex justify-center mt-6 animate-fade-in">
+                                    <Button
+                                      ref={startPhase2ButtonRef}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+
+                                        const scrollPayload = {
+                                          scrollY: window.scrollY,
+                                          scrollX: window.scrollX,
+                                          timestamp: Date.now(),
+                                        };
+
+                                        sessionStorage.setItem(
+                                          "ava-phase2-transition-scroll",
+                                          JSON.stringify(scrollPayload)
+                                        );
+                                        sessionStorage.setItem(
+                                          "ava-phase2-hide-phase1-messages",
+                                          "true"
+                                        );
+
+                                        requestAnimationFrame(() => {
+                                          window.scrollTo({
+                                            top: scrollPayload.scrollY,
+                                            left: scrollPayload.scrollX,
+                                          });
+                                        });
+
+                                        onPhase1Complete(userName || "User");
+                                      }}
+                                      size="lg"
+                                      className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-xl hover:scale-105 transition-all duration-200 px-8 py-6 text-lg font-semibold shadow-cyan-500/30"
+                                    >
+                                      Start Phase 2
+                                    </Button>
+                                  </div>
+                                )}
+                            </div>
+                          )}
+
+                          {/* Show examples if present */}
+                          {msg.examples && msg.examples.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-slate-700/20">
+                              <button
+                                onClick={() => {
+                                  const currentMsgId = msg.id;
+                                  const isLastQuestion =
+                                    messages.filter((m) => m.isQuestion).pop()
+                                      ?.id === currentMsgId;
+                                  if (isLastQuestion) {
+                                    setShowExamples(!showExamples);
+                                  }
+                                }}
+                                className="text-xs font-medium text-cyan-400 hover:text-blue-400 flex items-center gap-1 mb-2"
+                              >
+                                <ChevronDown
+                                  className={`w-3 h-3 transition-transform ${
+                                    showExamples &&
+                                    messages.filter((m) => m.isQuestion).pop()
+                                      ?.id === msg.id
+                                      ? "rotate-180"
+                                      : ""
+                                  }`}
+                                />
+                                Show examples
+                              </button>
+                              {showExamples &&
+                                messages.filter((m) => m.isQuestion).pop()
+                                  ?.id === msg.id && (
+                                  <div
+                                    ref={examplesContainerRef}
+                                    className="space-y-2"
+                                  >
+                                    {msg.examples.map((example, idx) => {
+                                      const isLast =
+                                        idx === msg.examples.length - 1;
+                                      return (
+                                        <button
+                                          key={idx}
+                                          ref={
+                                            isLast ? lastExampleRef : undefined
+                                          }
+                                          onClick={() =>
+                                            handleExampleClick(example)
+                                          }
+                                          className="block w-full text-left px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition-colors border border-gray-300"
+                                        >
+                                          {example}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  ) : (
+                    /* User Message - Right Side */
+                    <div className="flex gap-3 items-start justify-end">
+                      <div className="w-[70%] flex flex-col items-end gap-2">
+                        {(() => {
+                          // Check if this is a name message (not an answer)
+                          // Use the isName flag first (most reliable), then fallback to position check
+                          const messagesBeforeThis = messages.slice(
+                            0,
+                            msgIndex
+                          );
+                          const hasQuestionBefore = messagesBeforeThis.some(
+                            (m) => m.isQuestion && m.role === "ava"
+                          );
+                          const isFirstUserMessage = !messagesBeforeThis.some(
+                            (m) => m.role === "user"
+                          );
+                          const isNameMessage =
+                            msg.isName === true ||
+                            (!hasQuestionBefore && isFirstUserMessage);
+
+                          return (
+                            <>
+                              {editingMessageId === msg.id ? (
+                                <div className="flex flex-col gap-3 w-full">
+                                  <Textarea
+                                    value={editedContent}
+                                    onChange={(e) =>
+                                      setEditedContent(e.target.value)
+                                    }
+                                    className="min-h-[100px] text-[15px] leading-[1.75] w-full bg-white border-2 border-gray-300 focus:border-gray-500 focus-visible:border-gray-500 focus:ring-0 focus-visible:ring-0 focus:outline-none focus-visible:outline-none rounded-xl px-4 py-3 transition-all duration-200 resize-none placeholder:text-gray-500 text-gray-900 shadow-sm"
+                                    placeholder="Edit your answer here..."
+                                    autoFocus
+                                  />
+                                  {/* Action buttons inside the same container when editing */}
+                                  {isAnswerMessage(msg, msgIndex) && (
+                                    <div className="flex gap-2.5 items-center justify-end">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCancelEdit}
+                                        className="bg-gray-200 hover:bg-gray-300 border-0 text-gray-900 text-xs font-medium h-9 px-4 rounded-lg transition-all duration-200"
+                                      >
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleSaveEdit(msg.id)}
+                                        disabled={
+                                          isSavingEdit || !editedContent.trim()
+                                        }
+                                        className="bg-white hover:bg-gray-50 border-0 text-gray-700 hover:text-gray-900 text-xs font-medium h-9 px-4 rounded-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                                      >
+                                        {isSavingEdit ? (
+                                          <>
+                                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                            Saving...
+                                          </>
+                                        ) : (
+                                          "Save Changes"
+                                        )}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex gap-3 items-end">
+                                    <div
+                                      className={`bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl rounded-tr-sm px-4 py-3 ${
+                                        isNameMessage
+                                          ? "w-fit max-w-full"
+                                          : "w-full"
+                                      }`}
+                                    >
+                                      {(() => {
+                                        // Check if content is HTML (user messages typically aren't, but check anyway)
+                                        const isHTML =
+                                          typeof msg.content === "string" &&
+                                          /<[^>]+>/.test(msg.content);
+                                        return (
+                                          <p
+                                            className={`text-[15px] leading-[1.75] text-gray-900 ${
+                                              isHTML
+                                                ? ""
+                                                : "whitespace-pre-wrap"
+                                            }`}
+                                          >
+                                            {isHTML ? (
+                                              <span
+                                                dangerouslySetInnerHTML={{
+                                                  __html: msg.content,
+                                                }}
+                                              />
+                                            ) : (
+                                              msg.content
+                                            )}
+                                          </p>
+                                        );
+                                      })()}
+                                    </div>
+                                    {/* User Initials Avatar - Removed */}
+                                  </div>
+
+                                  {/* Edit Button - Only show for answer messages (not name) when NOT editing */}
+                                  {isAnswerMessage(msg, msgIndex) && (
+                                    <div className="flex gap-1 items-center w-full justify-end">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleEditAnswer(msg.id, msg.content)
+                                        }
+                                        className="group relative border-0 bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-900 h-8 w-8 p-0 transition-all duration-300 hover:scale-110 active:scale-95"
+                                      >
+                                        <Edit className="w-4 h-4 transition-all duration-300 group-hover:rotate-12" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleCopyAnswer(msg.content, msg.id)
+                                        }
+                                        className="group relative border-0 bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-900 h-8 w-8 p-0 transition-all duration-300 hover:scale-110 active:scale-95"
+                                        title="Copy answer"
+                                      >
+                                        {copiedMessageId === msg.id ? (
+                                          <CheckCheck className="w-4 h-4 text-green-500 transition-all duration-300" />
+                                        ) : (
+                                          <Copy className="w-4 h-4 transition-all duration-300 group-hover:scale-110" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
           {/* Typing Indicator */}
           {isTyping && (
@@ -3228,22 +3466,22 @@ export const AVAPhase1Interface = ({
             </div>
           )}
 
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} style={{ paddingBottom: "120px" }} />
         </div>
       </div>
 
       {/* Input Area - Fixed at Bottom of Page */}
       {/* Adjusts position and width based on sidebar state (collapsed/expanded) and accounts for scrollbar */}
       <div
-        className="fixed bottom-0 h-20 flex items-center justify-center border-t border-slate-800/50 bg-slate-900/20 backdrop-blur-sm z-20"
+        className="fixed bottom-0 min-h-[80px] flex items-end border-t border-slate-800/20 bg-slate-900/20 backdrop-blur-sm z-20 py-3"
         style={{
           left: `${sidebarOffset}px`,
           right: `${scrollbarWidth}px`,
         }}
       >
-        <div className="w-[50%] flex items-center gap-3">
-          <div className="flex-1 relative flex flex-col gap-2">
-            <div className="flex items-center gap-3">
+        <div className="w-full px-[20%] flex items-end gap-3">
+          <div className="flex-1 relative flex flex-col gap-2 min-w-0">
+            <div className="flex items-end gap-3">
               <Textarea
                 ref={inputRef}
                 value={inputValue}
@@ -3255,6 +3493,16 @@ export const AVAPhase1Interface = ({
                   }
                   // Auto-resize textarea like ChatGPT
                   resizeTextarea(e.target);
+
+                  // Smooth scroll to bottom when content changes
+                  requestAnimationFrame(() => {
+                    if (e.target.scrollHeight > e.target.clientHeight) {
+                      e.target.scrollTo({
+                        top: e.target.scrollHeight,
+                        behavior: "smooth",
+                      });
+                    }
+                  });
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder={
@@ -3280,11 +3528,11 @@ export const AVAPhase1Interface = ({
                 autoCapitalize="off"
                 spellCheck="false"
                 data-form-type="other"
-                className={`flex-1 bg-slate-950/50 border ${
+                className={`flex-1 bg-white border ${
                   validationError
-                    ? "border-purple-500/70 focus:border-purple-400 focus-visible:border-purple-400 focus:ring-2 focus-visible:ring-2 focus:ring-purple-500/40 focus-visible:ring-purple-500/40 shadow-lg shadow-purple-500/30"
-                    : "border-slate-800 focus:border-cyan-500/70 focus-visible:border-cyan-500/70 focus:ring-2 focus-visible:ring-2 focus:ring-cyan-500/30 focus-visible:ring-cyan-500/30 shadow-lg shadow-cyan-500/20"
-                } rounded-[7px] pl-4 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus-visible:outline-none focus-visible:ring-offset-0 transition-all duration-300 placeholder:text-slate-600 resize-none min-h-[40px] max-h-[120px] overflow-y-auto scrollbar-hide ${
+                    ? "border-red-500 focus:border-red-400 focus-visible:border-red-400 focus:ring-2 focus-visible:ring-2 focus:ring-red-500/40 focus-visible:ring-red-500/40 shadow-lg shadow-red-500/30"
+                    : "border-gray-300 focus:border-gray-500 focus-visible:border-gray-500 focus:ring-2 focus-visible:ring-2 focus:ring-gray-500/30 focus-visible:ring-gray-500/30 shadow-sm"
+                } rounded-[24px] pl-4 pr-4 py-2.5 text-sm text-gray-900 focus:outline-none focus-visible:outline-none focus-visible:ring-offset-0 transition-all duration-300 placeholder:text-gray-500 resize-none min-h-[44px] max-h-[200px] overflow-y-auto chatgpt-scrollbar ${
                   isReadyToMoveOnStage ? "cursor-not-allowed opacity-70" : ""
                 }`}
                 title={
@@ -3294,17 +3542,12 @@ export const AVAPhase1Interface = ({
                 }
                 rows={1}
                 style={{
-                  minHeight: "40px",
-                  maxHeight: "120px",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
+                  minHeight: "44px",
+                  maxHeight: "200px",
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
                 }}
               />
-              <style>{`
-                textarea::-webkit-scrollbar {
-                  display: none;
-                }
-              `}</style>
               <Button
                 onClick={handleSubmit}
                 disabled={
@@ -3316,7 +3559,7 @@ export const AVAPhase1Interface = ({
                   isReadyToMoveOnStage
                 }
                 size="icon"
-                className={`h-9 w-9 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white hover:from-cyan-400 hover:via-blue-400 hover:to-purple-400 hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex-shrink-0 ${
+                className={`h-9 w-9 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white hover:from-cyan-400 hover:via-blue-400 hover:to-purple-400 hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex-shrink-0 self-end mb-0.5 ${
                   isReadyToMoveOnStage ? "cursor-not-allowed" : ""
                 }`}
                 title={

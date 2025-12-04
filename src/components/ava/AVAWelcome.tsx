@@ -132,8 +132,8 @@ export const AVAWelcome = ({ onStart, isLoading = false }: AVAWelcomeProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative">
-      {/* Background with Colors */}
-      <div className="fixed inset-0 z-0 pointer-events-none bg-[#020617] opacity-80"></div>
+      {/* Background - White */}
+      <div className="fixed inset-0 z-0 pointer-events-none bg-white"></div>
       <div className="max-w-6xl w-full space-y-8 animate-fade-in relative z-10">
         {/* Hero Section */}
         <div className="text-center space-y-6">
@@ -169,7 +169,7 @@ export const AVAWelcome = ({ onStart, isLoading = false }: AVAWelcomeProps) => {
               Advanced Virtual Audience Analyzer
             </p>
             
-            <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-[1.75] space-y-4">
               Create a deep psychological profile of your ideal client that goes beyond demographics. 
               AVA helps you understand the <span className="text-cyan-400 font-semibold">subconscious motivations</span>, 
               <span className="text-purple-400 font-semibold"> emotional triggers</span>, and 
@@ -261,7 +261,7 @@ export const AVAWelcome = ({ onStart, isLoading = false }: AVAWelcomeProps) => {
                   1
                 </div>
                 <h3 className="font-bold text-xl text-slate-100">Phase 1: Discovery</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">
+                <p className="text-sm text-slate-400 leading-[1.75] space-y-2">
                   Engage in an intelligent conversation with AVA. Answer <span className="font-semibold text-slate-200">25-30 strategically designed questions</span> that uncover the foundational elements of your ideal client profile. AVA adapts to your responses for deeper insights.
                 </p>
                 <div className="text-xs text-cyan-400 font-semibold">⏱ 15-20 minutes</div>
@@ -273,7 +273,7 @@ export const AVAWelcome = ({ onStart, isLoading = false }: AVAWelcomeProps) => {
                   2
                 </div>
                 <h3 className="font-bold text-xl text-slate-100">Phase 2: Deep Analysis</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">
+                <p className="text-sm text-slate-400 leading-[1.75] space-y-2">
                   Watch as AVA generates your <span className="font-semibold text-slate-200">complete 21-section profile</span> in real-time. Each section is crafted using advanced AI to analyze patterns, extract insights, and build a comprehensive psychological map of your audience.
                 </p>
                 <div className="text-xs text-purple-400 font-semibold">⏱ 10-15 minutes</div>
@@ -285,7 +285,7 @@ export const AVAWelcome = ({ onStart, isLoading = false }: AVAWelcomeProps) => {
                   3
                 </div>
                 <h3 className="font-bold text-xl text-slate-100">Phase 3: Activation</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">
+                <p className="text-sm text-slate-400 leading-[1.75] space-y-2">
                   <span className="font-semibold text-slate-200">Download your complete profile</span> as a formatted document. Immediately integrate it into VoxBox Amplifiers to generate content that resonates at a subconscious level with your ideal clients.
                 </p>
                 <div className="text-xs text-blue-400 font-semibold">⏱ Instant download</div>

@@ -1,57 +1,120 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import BackgroundTech from "@/components/BackgroundTech";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  AtSign,
+  Eye,
+  EyeOff,
+  Lock,
+  User,
+  ArrowRight,
+  Check,
+  CheckCircle,
+} from "lucide-react";
+import AuthBackgroundTech from "@/components/AuthBackgroundTech";
+import authBgImage from "@/assets/auth-bg.png";
 
-// --- Icons (Inline SVGs) ---
-const EyeIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+// ==========================================
+// REUSABLE AUTH CARD COMPONENT
+// ==========================================
+interface AuthCardProps {
+  children: React.ReactNode;
+  minHeight?: string;
+}
+
+const AuthCard: React.FC<AuthCardProps> = ({
+  children,
+  minHeight = "750px",
+}) => {
+  return (
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 font-sans perspective-container z-10">
+      <div
+        className={`
+          relative w-full max-w-6xl bg-white rounded-3xl 
+          shadow-2xl
+          flex overflow-hidden border border-white/5
+          transition-all duration-700 ease-in-out transform-style-3d
+        `}
+        style={{ minHeight: minHeight }}
+      >
+        {/* --- LEFT SIDE: BRANDING (Static) --- */}
+        <div className="hidden md:flex w-1/2 bg-black text-white relative flex-col justify-center p-12">
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, #333 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }}
+          ></div>
+
+          <div className="relative z-10">
+            <div className="flex justify-center items-center gap-3 mb-4">
+              <div className="overflow-hidden border border-gray-800 shadow-2xl rounded-3xl">
+                <img
+                  src={authBgImage}
+                  alt="VoxBox"
+                  className="w-full h-[200px] object-cover"
+                />
+              </div>
+              <span className="text-4xl font-bold tracking-wider">VOXBOX</span>
+            </div>
+          </div>
+        </div>
+
+        {/* --- RIGHT SIDE: CONTENT (Animated) --- */}
+        <div className="w-full md:w-1/2 bg-white p-8 md:p-12 flex flex-col justify-center h-full overflow-y-auto animate-slow-entry">
+          {children}
+        </div>
+
+        <style>{`
+          .perspective-container { perspective: 1500px; }
+          .transform-style-3d { transform-style: preserve-3d; }
+          
+          @keyframes slowSlideUp {
+            0% { opacity: 0; transform: translateY(80px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          
+          .animate-slow-entry {
+            animation: slowSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          }
+
+          /* Popup Animation */
+          @keyframes popupScale {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .animate-popup {
+            animation: popupScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// VALIDATION ITEM COMPONENT
+// ==========================================
+const ValidationItem = ({ met, label }: { met: boolean; label: string }) => (
+  <div
+    className={`flex items-center gap-1.5 text-xs transition-colors duration-200 ${
+      met ? "text-green-600 font-medium" : "text-gray-400"
+    }`}
   >
-    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-const EyeOffIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.9 3.23" />
-    <path d="M1.05 1.05 22.95 22.95" />
-    <path d="M16.97 16.97A10.43 10.43 0 0 1 12 19c-7 0-10-7-10-7a13.16 13.16 0 0 1 3.91-4.91" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-emerald-400"
-  >
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
+    {met ? (
+      <Check size={12} strokeWidth={3} />
+    ) : (
+      <div className="w-3 h-3 rounded-full bg-gray-200" />
+    )}
+    <span>{label}</span>
+  </div>
 );
 
+// ==========================================
+// MAIN REGISTER COMPONENT
+// ==========================================
 const Register = () => {
   const navigate = useNavigate();
   const { register, isLoading } = useAuth();
@@ -67,11 +130,12 @@ const Register = () => {
   // --- Validation State ---
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // --- UI State ---
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   // --- Password Criteria ---
   const criteria = {
@@ -81,25 +145,94 @@ const Register = () => {
     special: /[^A-Za-z0-9]/.test(formData.password),
   };
 
+  // --- Validation Functions ---
+  const validateFullName = (name: string): string => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return "Full name is required.";
+    }
+    if (trimmed.length < 2) {
+      return "Full name must be at least 2 characters.";
+    }
+    if (trimmed.length > 50) {
+      return "Full name must be less than 50 characters.";
+    }
+    // Check for valid name format (letters, spaces, hyphens, apostrophes)
+    if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) {
+      return "Full name can only contain letters, spaces, hyphens, and apostrophes.";
+    }
+    // Check for consecutive spaces
+    if (/\s{2,}/.test(trimmed)) {
+      return "Full name cannot contain consecutive spaces.";
+    }
+    return "";
+  };
+
+  const validateEmail = (email: string): string => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      return "Email address is required.";
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      return "Please enter a valid email address.";
+    }
+    // Check for common typos
+    if (trimmedEmail.includes("..")) {
+      return "Email address cannot contain consecutive dots.";
+    }
+    if (trimmedEmail.startsWith(".") || trimmedEmail.endsWith(".")) {
+      return "Email address cannot start or end with a dot.";
+    }
+    // Check for valid domain
+    const domain = trimmedEmail.split("@")[1];
+    if (domain && (!domain.includes(".") || domain.startsWith(".") || domain.endsWith("."))) {
+      return "Please enter a valid email domain.";
+    }
+    return "";
+  };
+
+  const validatePassword = (password: string): string => {
+    if (!password) {
+      return "Password is required.";
+    }
+    if (password.length < 8) {
+      return "Password must be at least 8 characters.";
+    }
+    return "";
+  };
+
+  const validateConfirmPassword = (confirmPassword: string, password: string): string => {
+    if (!confirmPassword) {
+      return "Please confirm your password.";
+    }
+    if (confirmPassword !== password) {
+      return "Passwords do not match.";
+    }
+    return "";
+  };
+
   // --- Real-time Validation ---
   useEffect(() => {
     const newErrors: Record<string, string> = {};
 
-    if (touched.fullName && !formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required.";
+    if (touched.fullName) {
+      const error = validateFullName(formData.fullName);
+      if (error) newErrors.fullName = error;
     }
 
     if (touched.email) {
-      if (!formData.email) newErrors.email = "Email address is required.";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-        newErrors.email = "Please enter a valid email address.";
+      const error = validateEmail(formData.email);
+      if (error) newErrors.email = error;
+    }
+
+    if (touched.password) {
+      const error = validatePassword(formData.password);
+      if (error) newErrors.password = error;
     }
 
     if (touched.confirmPassword) {
-      if (!formData.confirmPassword)
-        newErrors.confirmPassword = "Confirmation is required.";
-      else if (formData.password !== formData.confirmPassword)
-        newErrors.confirmPassword = "Passwords do not match.";
+      const error = validateConfirmPassword(formData.confirmPassword, formData.password);
+      if (error) newErrors.confirmPassword = error;
     }
 
     setErrors(newErrors);
@@ -107,16 +240,60 @@ const Register = () => {
 
   // --- Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Real-time validation for touched fields
+    if (touched[name]) {
+      const newErrors = { ...errors };
+      if (name === "fullName") {
+        newErrors.fullName = validateFullName(value);
+      } else if (name === "email") {
+        newErrors.email = validateEmail(value);
+      } else if (name === "password") {
+        newErrors.password = validatePassword(value);
+        // Also validate confirm password if it's been touched
+        if (touched.confirmPassword) {
+          newErrors.confirmPassword = validateConfirmPassword(formData.confirmPassword, value);
+        }
+      } else if (name === "confirmPassword") {
+        newErrors.confirmPassword = validateConfirmPassword(value, formData.password);
+      }
+      setErrors(newErrors);
+    } else {
+      // Clear error when user starts typing
+      if (errors[name]) {
+        setErrors({ ...errors, [name]: "" });
+      }
+    }
   };
 
   const handleBlur = (field: string) => {
     setTouched({ ...touched, [field]: true });
+    
+    // Validate on blur
+    const newErrors = { ...errors };
+    if (field === "fullName") {
+      newErrors.fullName = validateFullName(formData.fullName);
+    } else if (field === "email") {
+      newErrors.email = validateEmail(formData.email);
+    } else if (field === "password") {
+      newErrors.password = validatePassword(formData.password);
+      // Also validate confirm password if it's been touched
+      if (touched.confirmPassword) {
+        newErrors.confirmPassword = validateConfirmPassword(formData.confirmPassword, formData.password);
+      }
+    } else if (field === "confirmPassword") {
+      newErrors.confirmPassword = validateConfirmPassword(formData.confirmPassword, formData.password);
+    }
+    setErrors(newErrors);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
+
+    // Mark all as touched
     setTouched({
       fullName: true,
       email: true,
@@ -124,288 +301,306 @@ const Register = () => {
       confirmPassword: true,
     });
 
-    const isPasswordValid = Object.values(criteria).every(Boolean);
-    const hasNoErrors = Object.keys(errors).length === 0;
-    const isFilled =
-      formData.fullName &&
-      formData.email &&
-      formData.password &&
-      formData.confirmPassword;
+    // Validate all fields
+    const newErrors: Record<string, string> = {};
+    const fullNameError = validateFullName(formData.fullName);
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+    const confirmPasswordError = validateConfirmPassword(formData.confirmPassword, formData.password);
+    
+    if (fullNameError) newErrors.fullName = fullNameError;
+    if (emailError) newErrors.email = emailError;
+    if (passwordError) newErrors.password = passwordError;
+    if (confirmPasswordError) newErrors.confirmPassword = confirmPasswordError;
 
-    if (isPasswordValid && hasNoErrors && isFilled) {
+    setErrors(newErrors);
+
+    // Check terms checkbox
+    const termsCheckbox = document.getElementById("terms") as HTMLInputElement;
+    if (!termsCheckbox?.checked) {
+      setError("You must agree to the Terms of Service and Privacy Policy to create an account.");
+      return;
+    }
+
+    // Check password criteria
+    const isPasswordValid = Object.values(criteria).every(Boolean);
+    if (!isPasswordValid) {
+      setError("Password does not meet all requirements. Please check the criteria below.");
+      return;
+    }
+
+    // Check if there are any validation errors
+    if (Object.keys(newErrors).length > 0) {
+      return; // Stop if there are validation errors
+    }
+
+    // All validations passed
+    if (isPasswordValid && Object.keys(newErrors).length === 0) {
       try {
         await register({
           name: formData.fullName.trim(),
           email: formData.email,
           password: formData.password,
         });
-        
+
         // Mark as new user for payment flow
-        localStorage.setItem('isNewUser', 'true');
-        
-        // Redirect to login page after successful registration
-        navigate('/login');
+        localStorage.setItem("isNewUser", "true");
+
+        // Show success popup
+        setShowSuccessPopup(true);
       } catch (error: any) {
-        setError(error.message || 'Registration failed. Please try again.');
+        setError(error.message || "Registration failed. Please try again.");
       }
     }
   };
 
-  // --- SHARED INPUT STYLES ---
-  // This class string now includes the hover shadow effect you requested
-  const inputClasses = (hasError: boolean) => `
-    w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none 
-    transition-all duration-300
-    hover:shadow-[0_0_15px_rgba(6,182,212,0.25)] hover:border-cyan-400/50
-    focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/20
+  const handleGetStarted = () => {
+    setShowSuccessPopup(false);
+    navigate("/login");
+  };
+
+  const inputContainerClass = "relative group";
+  const iconClass =
+    "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors";
+  const inputClass = (hasError: boolean) => `
+    w-full pl-10 pr-10 py-3 rounded-xl border bg-gray-50 text-gray-900 placeholder-gray-400 
+    focus:outline-none focus:ring-2 focus:bg-white transition-all duration-200
     ${
       hasError
-        ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
-        : "border-slate-600"
+        ? "border-red-500 focus:ring-red-200"
+        : "border-gray-200 focus:ring-black"
     }
   `;
 
   return (
-    <div className="w-screen h-screen relative overflow-hidden font-sans text-slate-200">
-      {/* 1. Infinite Moving Circuit Background */}
-      <BackgroundTech />
+    <div className="relative min-h-screen w-full">
+      <AuthBackgroundTech />
+      <AuthCard minHeight="750px">
+        <div className="mb-6 text-center md:text-left">
+          <h3 className="text-2xl flex justify-center font-bold text-gray-900 mb-2">
+            Sign Up
+          </h3>
+          <p className="text-sm flex justify-center text-black">
+            Get started and create your account.
+          </p>
+        </div>
 
-      {/* 2. Content Container */}
-      <div className="relative z-10 flex items-center justify-center h-full p-4 overflow-y-auto">
-        {/* Glassmorphism Card */}
-        <div className="w-full max-w-[500px] bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 md:p-10 shadow-2xl shadow-black/60 transition-all duration-300">
-          {/* --- Header Section --- */}
-          <div className="text-center mb-8">
-            {/* Explicit Label */}
-            <div className="inline-block mb-3 px-5 py-3 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-              Sign Up
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
             </div>
+          )}
 
-            {/* Logo */}
-            <h2 className="text-4xl font-black tracking-tighter mb-2 text-white drop-shadow-lg">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-600 uppercase">
-                VoxBox
-              </span>
-            </h2>
-
-            <h1 className="text-xl md:text-2xl font-bold text-slate-100 mb-2">
-              Start Creating New
-            </h1>
-          </div>
-
-          {/* --- Form Section --- */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
-                {error}
+          {/* Full Name */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700 block">
+              Full Name
+            </label>
+            <div className={inputContainerClass}>
+              <div className={iconClass}>
+                <User size={18} />
               </div>
-            )}
-
-            {/* 1. Full Name */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="fullName"
-                className="block text-sm font-medium text-slate-300 ml-1"
-              >
-                Full Name
-              </label>
               <input
-                id="fullName"
-                name="fullName"
                 type="text"
+                name="fullName"
+                autoComplete="off"
                 placeholder="John Doe"
                 value={formData.fullName}
                 onChange={handleChange}
                 onBlur={() => handleBlur("fullName")}
-                className={inputClasses(!!errors.fullName)}
+                className={inputClass(!!errors.fullName)}
               />
-              {errors.fullName && (
-                <p className="text-red-400 text-xs ml-1">{errors.fullName}</p>
-              )}
             </div>
+            {errors.fullName && (
+              <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+            )}
+          </div>
 
-            {/* 2. Email Address */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-slate-300 ml-1"
-              >
-                Email Address
-              </label>
+          {/* Email */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700 block">
+              Email Address
+            </label>
+            <div className={inputContainerClass}>
+              <div className={iconClass}>
+                <AtSign size={18} />
+              </div>
               <input
-                id="email"
-                name="email"
                 type="email"
+                name="email"
+                autoComplete="off"
                 placeholder="name@company.com"
                 value={formData.email}
                 onChange={handleChange}
                 onBlur={() => handleBlur("email")}
-                className={inputClasses(!!errors.email)}
+                className={inputClass(!!errors.email)}
               />
-              {errors.email && (
-                <p className="text-red-400 text-xs ml-1">{errors.email}</p>
-              )}
             </div>
-
-            {/* 3. Password */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-300 ml-1"
-              >
-                Password
-              </label>
-              <div className="relative group">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPass ? "text" : "password"}
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur("password")}
-                  className={inputClasses(false) + " pr-12"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  title={showPass ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                >
-                  {showPass ? <EyeIcon /> : <EyeOffIcon />}
-                </button>
-              </div>
-
-              {/* Real-time Ticks */}
-              {formData.password.length > 0 && (
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 pl-1">
-                  <ValidationItem met={criteria.length} label="8+ Characters" />
-                  <ValidationItem
-                    met={criteria.upper}
-                    label="Uppercase Letter"
-                  />
-                  <ValidationItem met={criteria.number} label="Number" />
-                  <ValidationItem
-                    met={criteria.special}
-                    label="Special Character"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* 4. Confirm Password */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-slate-300 ml-1"
-              >
-                Confirm Password
-              </label>
-              <div className="relative group">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirm ? "text" : "password"}
-                  placeholder="Re-enter password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur("confirmPassword")}
-                  className={inputClasses(!!errors.confirmPassword) + " pr-12"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  title={showConfirm ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                >
-                  {showConfirm ? <EyeIcon /> : <EyeOffIcon />}
-                </button>
-              </div>
-
-              {errors.confirmPassword ? (
-                <p className="text-red-400 text-xs ml-1">
-                  {errors.confirmPassword}
-                </p>
-              ) : (
-                <p className="text-slate-500 text-xs ml-1"></p>
-              )}
-            </div>
-
-            {/* Terms */}
-            <div className="pt-2">
-              <p className="text-xs text-slate-400 leading-relaxed ml-1">
-                By creating an account, you agree to our{" "}
-                <a
-                  href="/terms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-cyan-400 hover:underline"
-                >
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a
-                  href="/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-cyan-400 hover:underline"
-                >
-                  Privacy Policy
-                </a>
-                .
-              </p>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(6,182,212,0.39)] transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
-            </button>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-8 text-center pt-6 border-t border-slate-700/50">
-            <p className="text-slate-400 text-sm">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="text-white font-semibold hover:text-cyan-400 transition-colors ml-1 border-b border-transparent hover:border-cyan-400 pb-0.5"
-              >
-                Sign in
-              </Link>
-            </p>
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+            )}
           </div>
+
+          {/* Password */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700 block">
+              Password
+            </label>
+            <div className={inputContainerClass}>
+              <div className={iconClass}>
+                <Lock size={18} />
+              </div>
+              <input
+                type={showPass ? "text" : "password"}
+                name="password"
+                placeholder="Create a password"
+                value={formData.password}
+                onChange={handleChange}
+                onBlur={() => handleBlur("password")}
+                className={inputClass(false)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+              >
+                {showPass ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+            )}
+            {formData.password.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <ValidationItem met={criteria.length} label="8+ Characters" />
+                <ValidationItem met={criteria.upper} label="Uppercase" />
+                <ValidationItem met={criteria.number} label="Number" />
+                <ValidationItem met={criteria.special} label="Symbol" />
+              </div>
+            )}
+          </div>
+
+          {/* Confirm Password */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700 block">
+              Confirm Password
+            </label>
+            <div className={inputContainerClass}>
+              <div className={iconClass}>
+                <Lock size={18} />
+              </div>
+              <input
+                type={showConfirm ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Re-enter password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                onBlur={() => handleBlur("confirmPassword")}
+                className={inputClass(!!errors.confirmPassword)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+              >
+                {showConfirm ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.confirmPassword}
+              </p>
+            )}
+          </div>
+
+          {/* Terms */}
+          <div className="flex items-start gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="terms"
+              className="mt-1 rounded border-gray-300 text-black focus:ring-black"
+            />
+            <label htmlFor="terms" className="text-xs text-black">
+              I agree to the{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-black hover:underline"
+              >
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-black hover:underline"
+              >
+                Privacy Policy
+              </a>
+              .
+            </label>
+          </div>
+
+          {/* Create Account Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 group shadow-lg shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Creating Account..." : "Create Account"}
+            {!isLoading && (
+              <ArrowRight
+                size={18}
+                className="group-hover:translate-x-1 transition-transform"
+              />
+            )}
+          </button>
+        </form>
+
+        {/* Footer / Switch to Sign In */}
+        <div className="mt-8 text-center border-t border-gray-100 pt-6">
+          <p className="text-sm text-gray-500">
+            Already have an account?{" "}
+            <Link to="/login" className="font-bold text-black hover:underline">
+              Sign In
+            </Link>
+          </p>
         </div>
-      </div>
+
+        {/* SUCCESS POPUP */}
+        {showSuccessPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center justify-center animate-popup max-w-sm w-full mx-4 text-center border border-gray-100">
+              {/* Success Icon */}
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 text-green-600">
+                <CheckCircle size={32} strokeWidth={3} />
+              </div>
+
+              {/* Success Message */}
+              <h2 className="text-2xl font-bold mb-2 text-gray-900">
+                Success!
+              </h2>
+              <p className="text-gray-500 mb-8">
+                Account has been created successfully.
+              </p>
+
+              {/* Get Started Button */}
+              <button
+                onClick={handleGetStarted}
+                className="w-full bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-all transform active:scale-[0.98] shadow-lg shadow-black/20 flex items-center justify-center gap-2"
+              >
+                Get Started
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+      </AuthCard>
     </div>
   );
 };
-
-// Helper for Ticks
-const ValidationItem = ({ met, label }: { met: boolean; label: string }) => (
-  <div
-    className={`flex items-center gap-2 text-xs transition-colors duration-300 ${
-      met ? "text-emerald-400 font-medium" : "text-slate-500"
-    }`}
-  >
-    <div
-      className={`flex items-center justify-center w-4 h-4 rounded-full border ${
-        met
-          ? "border-emerald-500/50 bg-emerald-500/10"
-          : "border-slate-600 bg-slate-800"
-      }`}
-    >
-      {met ? (
-        <CheckIcon />
-      ) : (
-        <span className="w-1 h-1 rounded-full bg-slate-600" />
-      )}
-    </div>
-    <span>{label}</span>
-  </div>
-);
 
 export default Register;
