@@ -1019,12 +1019,17 @@ export const AVAPhase2ChatInterface = ({
   };
 
   // Notify parent of progress changes
+  // Calculate overall Phase 2 progress (completed sections out of 21 total)
   useEffect(() => {
     if (onProgressChange) {
-      const progress = getCurrentSectionProgress();
-      onProgressChange(progress);
+      // Use overall Phase 2 progress (completed sections / 21 total sections)
+      const overallProgress = {
+        currentQuestionIndex: completedCount,
+        totalQuestions: totalSections, // 21 sections total
+      };
+      onProgressChange(overallProgress);
     }
-  }, [currentSection, sections, onProgressChange]);
+  }, [completedCount, totalSections, onProgressChange]);
 
   // Notify parent when Phase 2 is complete
   useEffect(() => {
@@ -3243,7 +3248,7 @@ export const AVAPhase2ChatInterface = ({
                               {/* CRITICAL: Don't show question metadata in Phase 2 */}
                               {/* Section names are already shown in Phase 2 sections, so Phase 1 question numbers are not needed */}
                               <div
-                                className={`text-[15px] leading-relaxed text-slate-200 ${(() => {
+                                className={`text-[15px] leading-[1.75] text-slate-200 ${(() => {
                                   // Check if content contains HTML tags
                                   const htmlTagRegex = /<[^>]+>/;
                                   const isHTML =
@@ -3261,7 +3266,7 @@ export const AVAPhase2ChatInterface = ({
                                   if (isHTML) {
                                     return (
                                       <div
-                                        className="ava-message-content"
+                                        className="ava-message-content text-gray-900"
                                         dangerouslySetInnerHTML={{
                                           __html: msg.content,
                                         }}
@@ -3310,7 +3315,7 @@ export const AVAPhase2ChatInterface = ({
                               {msg.examples &&
                                 msg.examples.length > 0 &&
                                 !isStarted && (
-                                  <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="mt-4 pt-4 border-t border-gray-200/30">
                                     <div className="text-xs font-medium text-vox-pink mb-2">
                                       Examples:
                                     </div>
@@ -3318,7 +3323,7 @@ export const AVAPhase2ChatInterface = ({
                                       {msg.examples.map((example, idx) => (
                                         <div
                                           key={idx}
-                                          className="text-sm text-slate-300 bg-slate-800/50 border border-slate-700/50 px-3 py-2 rounded-lg"
+                                          className="text-sm text-gray-700 bg-gray-100 border border-gray-300 px-3 py-2 rounded-lg"
                                         >
                                           {example}
                                         </div>
@@ -3333,7 +3338,7 @@ export const AVAPhase2ChatInterface = ({
                         <div className="flex gap-3 items-start justify-end">
                           <div className="w-[70%] flex justify-end gap-3 items-end">
                             <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl rounded-tr-sm px-4 py-3">
-                              <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-slate-200">
+                              <p className="text-[15px] leading-[1.75] whitespace-pre-wrap text-gray-900 space-y-3">
                                 {msg.content}
                               </p>
                             </div>
@@ -3373,7 +3378,7 @@ export const AVAPhase2ChatInterface = ({
                                 </div>
                               </div>
                             )}
-                            <p className="text-[15px] leading-relaxed text-slate-200 whitespace-pre-wrap">
+                            <p className="text-[15px] leading-[1.75] text-slate-200 whitespace-pre-wrap space-y-3">
                               {item.questionText}
                             </p>
                           </div>
@@ -3382,8 +3387,8 @@ export const AVAPhase2ChatInterface = ({
                       {/* Answer - User Message (Right Side) */}
                       <div className="flex gap-3 items-start justify-end">
                         <div className="w-[70%] flex justify-end gap-3 items-end">
-                          <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl rounded-tr-sm px-4 py-3">
-                            <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-slate-200">
+                            <div className="bg-gray-50 border border-gray-200 rounded-2xl rounded-tr-sm px-4 py-3">
+                              <p className="text-[15px] leading-[1.75] whitespace-pre-wrap text-gray-900 space-y-3">
                               {item.answer}
                             </p>
                           </div>
@@ -3676,7 +3681,7 @@ export const AVAPhase2ChatInterface = ({
                               Question {section.sectionNumber}.{qIndex + 1}
                             </div>
                             <p
-                              className="text-[15px] leading-relaxed text-slate-200 whitespace-pre-wrap"
+                              className="text-[15px] leading-[1.75] text-slate-200 whitespace-pre-wrap space-y-3"
                               style={{ fontWeight: 600 }}
                             >
                               {safeQuestion.questionText.replace(
@@ -3717,19 +3722,19 @@ export const AVAPhase2ChatInterface = ({
                                     onChange={(e) =>
                                       setEditedContent(e.target.value)
                                     }
-                                    className="min-h-[120px] text-[15px] leading-relaxed w-full bg-slate-800/50 border-2 border-slate-700/50 focus:border-cyan-500/50 focus-visible:border-cyan-500/50 focus:ring-0 focus-visible:ring-0 focus:outline-none focus-visible:outline-none rounded-xl px-4 py-3 transition-all duration-200 resize-none placeholder:text-slate-500 text-slate-200 shadow-sm"
+                                    className="min-h-[120px] text-[15px] leading-[1.75] w-full bg-slate-800/50 border-2 border-slate-700/50 focus:border-cyan-500/50 focus-visible:border-cyan-500/50 focus:ring-0 focus-visible:ring-0 focus:outline-none focus-visible:outline-none rounded-xl px-4 py-3 transition-all duration-200 resize-none placeholder:text-slate-500 text-slate-200 shadow-sm"
                                     placeholder="Edit your answer here..."
                                     autoFocus
                                   />
                                 ) : (
-                                  <p className="text-base leading-relaxed whitespace-pre-wrap text-white font-normal tracking-wide">
+                                  <p className="text-base leading-[1.75] whitespace-pre-wrap text-white font-normal tracking-wide space-y-3">
                                     {displayAnswer}
                                   </p>
                                 )}
                               </div>
 
                               {/* Action Buttons - Enterprise-level design with professional styling */}
-                              <div className="flex gap-3 items-center w-full justify-between mt-3 pt-3 border-t border-gray-100">
+                              <div className="flex gap-3 items-center w-full justify-between mt-4 pt-4 border-t border-gray-100/30">
                                 <div className="flex gap-2.5 items-center">
                                   {/* Per-question Confirm */}
                                   {!safeQuestion.isApproved && (
@@ -4060,7 +4065,7 @@ export const AVAPhase2ChatInterface = ({
                   )}
                 </div>
 
-                <div className="pt-6 border-t space-y-3">
+                <div className="pt-6 border-t border-gray-200/30 space-y-3">
                   <h3 className="font-semibold text-sm text-muted-foreground">
                     Next Steps
                   </h3>

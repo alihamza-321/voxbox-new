@@ -1,179 +1,125 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import BackgroundTech from "@/components/BackgroundTech";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthService } from "@/lib/auth";
 import { WorkspaceService } from "@/lib/workspace";
+import { AtSign, Eye, EyeOff, Lock, ArrowRight, CheckCircle } from "lucide-react";
+import AuthBackgroundTech from "@/components/AuthBackgroundTech";
+import authBgImage from "@/assets/auth-bg.png";
 
-// --- Icons (Inline SVGs) ---
-const EyeIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-const EyeOffIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.9 3.23" />
-    <path d="M1.05 1.05 22.95 22.95" />
-    <path d="M16.97 16.97A10.43 10.43 0 0 1 12 19c-7 0-10-7-10-7a13.16 13.16 0 0 1 3.91-4.91" />
-  </svg>
-);
+// ==========================================
+// REUSABLE AUTH CARD COMPONENT
+// ==========================================
+interface AuthCardProps {
+  children: React.ReactNode;
+  height?: string;
+}
 
-const BackArrowIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="19" y1="12" x2="5" y2="12"></line>
-    <polyline points="12 19 5 12 12 5"></polyline>
-  </svg>
-);
-
-// --- Custom Internal Confetti Component ---
-const PartyConfetti = () => {
-  const particles = Array.from({ length: 150 }).map((_, i) => {
-    const colors = [
-      "#22d3ee",
-      "#3b82f6",
-      "#a855f7",
-      "#f472b6",
-      "#ffffff",
-      "#fbbf24",
-    ];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const angle = Math.random() * 360 * (Math.PI / 180);
-    const velocity = Math.random() * 150 + 50;
-    const tx = Math.cos(angle) * velocity;
-    const ty = Math.sin(angle) * velocity - Math.random() * 50;
-    const size = Math.random() * 6 + 4;
-    const animDuration = Math.random() * 0.8 + 0.6;
-
-    return (
-      <div
-        key={i}
-        className="absolute rounded-sm opacity-0"
-        style={{
-          top: "40%",
-          left: "50%",
-          width: `${size}px`,
-          height: `${size * 0.6}px`,
-          backgroundColor: randomColor,
-          // @ts-ignore
-          "--tx": `${tx}px`,
-          "--ty": `${ty}px`,
-          "--rot": `${Math.random() * 720}deg`,
-          animation: `blast ${animDuration}s cubic-bezier(0.2, 0.9, 0.3, 1) forwards`,
-        }}
-      />
-    );
-  });
-
+const AuthCard = ({ children, height = "min-h-[600px]" }: AuthCardProps) => {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      <style>{`
-        @keyframes blast {
-          0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
-          60% { opacity: 1; }
-          100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty) + 100px)) rotate(var(--rot)) scale(1); }
-        }
-      `}</style>
-      {particles}
-    </div>
-  );
-};
-
-// --- Sub-Component: Success Modal ---
-const SuccessModal = ({
-  onClose,
-  title,
-  message,
-}: {
-  onClose: () => void;
-  title: string;
-  message: string;
-}) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <style>{`
-        @keyframes zoomIn {
-          0% { opacity: 0; transform: scale(0.8); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        .animate-zoom-in {
-          animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}</style>
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 font-sans perspective-container z-10">
       <div
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300"
-        onClick={onClose}
-      ></div>
-      <div className="relative z-20 w-full max-w-md bg-[#0f172a] border border-cyan-500/50 rounded-3xl p-8 text-center shadow-[0_0_60px_rgba(6,182,212,0.5)] overflow-hidden animate-zoom-in">
-        <PartyConfetti />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-40 bg-cyan-500/10 blur-[80px] pointer-events-none z-0"></div>
-        <div className="relative z-10">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-tr from-cyan-400 to-blue-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/40">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="3"
-                d="M5 13l4 4L19 7"
-              ></path>
-            </svg>
+        className={`
+          relative w-full max-w-6xl bg-white rounded-3xl 
+          shadow-2xl
+          flex overflow-hidden border border-white/5
+          ${height}
+          transform-style-3d backface-hidden
+        `}
+      >
+        {/* Left Side (Black - Static) */}
+        <div className="hidden md:flex w-1/2 bg-black text-white relative flex-col justify-center p-12">
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, #333 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }}
+          ></div>
+
+          <div className="relative z-10">
+            <div className="flex justify-center items-center gap-3 mb-4">
+              <div className="overflow-hidden border border-gray-800 shadow-2xl rounded-3xl">
+                <img
+                  src={authBgImage}
+                  alt="VoxBox"
+                  className="w-full h-[200px] object-cover"
+                />
+              </div>
+              <span className="text-4xl font-bold tracking-wider">VOXBOX</span>
+            </div>
           </div>
-          <h2 className="text-3xl font-black text-white mb-3 tracking-tight drop-shadow-2xl">
-            {title}
-          </h2>
-          <p className="text-slate-300 mb-8 text-sm leading-relaxed px-4 font-medium">
-            {message}
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full py-4 rounded-xl font-bold text-[#0f172a] text-lg bg-gradient-to-r from-cyan-400 to-cyan-300 hover:from-white hover:to-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all transform hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            Get Started
-          </button>
         </div>
+
+        {/* Right Side (White/Form) */}
+        <div className="w-full md:w-1/2 bg-white p-8 md:p-12 flex items-center justify-center animate-slow-entry">
+          <div className="w-full max-w-md">{children}</div>
+        </div>
+
+        <style>{`
+          .perspective-container { perspective: 1500px; }
+          .transform-style-3d { transform-style: preserve-3d; }
+          .backface-hidden { backface-visibility: hidden; }
+          
+          @keyframes slowSlideUp {
+            0% { opacity: 0; transform: translateY(80px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+
+          .animate-slow-entry {
+            animation: slowSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          }
+
+          @keyframes popupScale {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .animate-popup {
+            animation: popupScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+        `}</style>
       </div>
     </div>
   );
 };
 
-// --- Types ---
+// ==========================================
+// SUCCESS POPUP COMPONENT
+// ==========================================
+const SuccessPopup = ({
+  title,
+  message,
+  onClose,
+}: {
+  title: string;
+  message: string;
+  onClose: () => void;
+}) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center justify-center animate-popup max-w-sm w-full mx-4 text-center">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
+          <CheckCircle size={32} />
+        </div>
+        <h2 className="text-2xl font-bold mb-2 text-gray-900">{title}</h2>
+        <p className="text-gray-500 mb-2">{message}</p>
+        <button
+          onClick={onClose}
+          className="mt-4 w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-all"
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// MAIN LOGIN COMPONENT
+// ==========================================
 type ViewState = "login" | "forgot-step-1" | "forgot-step-2";
 
-// --- Main Component ---
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
@@ -202,37 +148,115 @@ const Login: React.FC = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
 
-  // --- Helper: Input Class ---
-  const inputClasses = (hasError: boolean) => `
-    w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none 
-    transition-all duration-300
-    hover:shadow-[0_0_15px_rgba(6,182,212,0.25)] hover:border-cyan-400/50
-    focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/20
-    ${
-      hasError
-        ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
-        : "border-slate-600"
+  // --- Validation Functions ---
+  const validateEmail = (email: string): string => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      return "Email address is required.";
     }
-  `;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      return "Please enter a valid email address.";
+    }
+    // Check for common typos
+    if (trimmedEmail.includes("..")) {
+      return "Email address cannot contain consecutive dots.";
+    }
+    if (trimmedEmail.startsWith(".") || trimmedEmail.endsWith(".")) {
+      return "Email address cannot start or end with a dot.";
+    }
+    // Check for valid domain
+    const domain = trimmedEmail.split("@")[1];
+    if (domain && (!domain.includes(".") || domain.startsWith(".") || domain.endsWith("."))) {
+      return "Please enter a valid email domain.";
+    }
+    return "";
+  };
+
+  const validatePassword = (password: string, isSubmit: boolean = false): string => {
+    if (!password || password.trim() === "") {
+      return isSubmit ? "Password is required." : "";
+    }
+    if (password.length < 6) {
+      return "Password must be at least 6 characters long.";
+    }
+    // Check for whitespace-only passwords
+    if (password.trim().length === 0) {
+      return "Password cannot be only spaces.";
+    }
+    return "";
+  };
 
   // --- Handlers: Login ---
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear error on type
-    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: "" });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Real-time validation
+    if (touched[name]) {
+      const newErrors = { ...errors };
+      if (name === "email") {
+        const emailError = validateEmail(value);
+        newErrors.email = emailError;
+      } else if (name === "password") {
+        const passwordError = validatePassword(value);
+        newErrors.password = passwordError;
+      }
+      setErrors(newErrors);
+    } else {
+      // Clear error when user starts typing
+      if (errors[name]) {
+        setErrors({ ...errors, [name]: "" });
+      }
+    }
+  };
+
+  const handleLoginBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true });
+    
+    // Validate on blur (not submit, so don't require password if empty)
+    const newErrors = { ...errors };
+    if (field === "email") {
+      newErrors.email = validateEmail(formData.email);
+    } else if (field === "password") {
+      // On blur, only validate if password is provided
+      if (formData.password && formData.password.trim() !== "") {
+        newErrors.password = validatePassword(formData.password, false);
+      } else {
+        // Clear password error on blur if empty (will show on submit)
+        newErrors.password = "";
+      }
+    }
+    setErrors(newErrors);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    setTouched({ email: true, password: true });
+    
+    // Validate all fields
     const newErrors: Record<string, string> = {};
-    if (!formData.email) newErrors.email = "Email address is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      newErrors.email = "Invalid email format.";
-    if (!formData.password) newErrors.password = "Password is required.";
+    
+    // Validate email
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      newErrors.email = emailError;
+    }
+    
+    // Validate password - required on submit
+    if (!formData.password || formData.password.trim() === "") {
+      newErrors.password = "Password is required.";
+    } else {
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) {
+        newErrors.password = passwordError;
+      }
+    }
 
     setErrors(newErrors);
-    setTouched({ email: true, password: true });
 
+    // Only proceed if there are no validation errors
     if (Object.keys(newErrors).length === 0) {
       try {
         await login(formData);
@@ -380,306 +404,267 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="w-screen h-screen relative overflow-hidden font-sans text-slate-200">
-      <BackgroundTech />
-
-      <div className="relative z-10 w-full h-full flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
-        <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* --- LEFT COLUMN: BRANDING --- */}
-          <div
-            className={`flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-6 transition-all duration-500 ${
-              showSuccessModal ? "opacity-0 blur-sm" : "opacity-100"
-            }`}
+    <div className="relative min-h-screen w-full">
+      <AuthBackgroundTech />
+      <AuthCard height="min-h-[750px]">
+        <div className="mb-8 text-center">
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          {view === "login" && "Sign In"}
+          {view === "forgot-step-1" && "Reset Password"}
+          {view === "forgot-step-2" && "New Password"}
+        </h3>
+        {view !== "login" && (
+          <button
+            onClick={() => {
+              if (view === "forgot-step-2") setView("forgot-step-1");
+              else setView("login");
+            }}
+            className="text-sm text-gray-500 hover:text-black transition-colors"
           >
-            <div className="flex flex-col lg:flex-row items-center gap-6">
-              <div className="w-20 h-20 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(6,182,212,0.4)] transform rotate-3 hover:rotate-6 transition-transform duration-500 flex-shrink-0">
-                <svg
-                  className="w-10 h-10 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                  />
-                </svg>
-              </div>
-              <h1 className="text-transparent text-6xl font-bold bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-600 uppercase">
-                VoxBox
-              </h1>
-            </div>
-          </div>
-
-          {/* --- RIGHT COLUMN: DYNAMIC FORM CARD --- */}
-          <div className="flex justify-center lg:justify-end">
-            <div
-              className={`w-full max-w-[480px] bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 md:p-10 shadow-2xl shadow-black/60 transition-all duration-500 transform ${
-                showSuccessModal
-                  ? "scale-90 opacity-0 pointer-events-none"
-                  : "scale-100 opacity-100"
-              }`}
-            >
-              {/* --- HEADER --- */}
-              <div className="mb-8 text-center relative">
-                {view !== "login" && (
-                  <button
-                    onClick={() => {
-                      // If on step 2, go back to step 1, else go to login
-                      if (view === "forgot-step-2") setView("forgot-step-1");
-                      else setView("login");
-                    }}
-                    className="absolute left-0 top-1 text-slate-400 hover:text-white transition-colors"
-                    title="Go Back"
-                  >
-                    <BackArrowIcon />
-                  </button>
-                )}
-                <div className="inline-block px-5 py-3 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                  {view === "login" && "Sign In"}
-                  {view === "forgot-step-1" && "Reset Password"}
-                  {view === "forgot-step-2" && "New Password"}
-                </div>
-              </div>
-
-              {/* --- VIEW 1: LOGIN FORM --- */}
-              {view === "login" && (
-                <form onSubmit={handleLoginSubmit} className="space-y-6">
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-slate-300 ml-1">
-                      Email Address
-                    </label>
-                    <input
-                      name="email"
-                      type="email"
-                      placeholder="name@company.com"
-                      value={formData.email}
-                      onChange={handleLoginChange}
-                      className={inputClasses(!!errors.email)}
-                    />
-                    {errors.email && (
-                      <p className="text-red-400 text-xs ml-1">
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-slate-300 ml-1">
-                      Password
-                    </label>
-                    <div className="relative group">
-                      <input
-                        name="password"
-                        type={showPass ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={formData.password}
-                        onChange={handleLoginChange}
-                        className={inputClasses(!!errors.password) + " pr-12"}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPass(!showPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                      >
-                        {showPass ? <EyeIcon /> : <EyeOffIcon />}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="text-red-400 text-xs ml-1">
-                        {errors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between mt-2">
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                      <div className="relative flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={rememberMe}
-                          onChange={(e) => setRememberMe(e.target.checked)}
-                          className="peer appearance-none w-4 h-4 rounded border border-slate-600 bg-slate-800/50 checked:bg-cyan-500 checked:border-cyan-500 focus:ring-1 focus:ring-cyan-400 transition-all cursor-pointer"
-                        />
-                        <svg
-                          className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 top-0.5 left-0.5 transition-opacity"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                      <span className="text-sm text-white group-hover:text-slate-300 transition-colors select-none">
-                        Remember me
-                      </span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setView("forgot-step-1")}
-                      className="text-sm font-medium text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(6,182,212,0.39)] transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Signing In...' : 'Sign In'}
-                  </button>
-
-                  <div className="mt-8 text-center pt-6 border-t border-slate-700/50">
-                    <p className="text-slate-400 text-sm">
-                      Don't have an account?{" "}
-                      <Link
-                        to="/register"
-                        className="text-white font-semibold hover:text-cyan-400 transition-colors ml-1 border-b border-transparent hover:border-cyan-400 pb-0.5"
-                      >
-                        Sign up
-                      </Link>
-                    </p>
-                  </div>
-                </form>
-              )}
-
-              {/* --- VIEW 2: FORGOT PASSWORD STEP 1 (Email) --- */}
-              {view === "forgot-step-1" && (
-                <form onSubmit={handleForgotStep1Submit} className="space-y-6">
-                  <p className="text-slate-400 text-sm text-center mb-4">
-                    Enter your email address to verify your account.
-                  </p>
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-slate-300 ml-1">
-                      Email Address
-                    </label>
-                    <input
-                      name="email"
-                      type="email"
-                      placeholder="name@company.com"
-                      value={resetData.email}
-                      onChange={handleResetChange}
-                      className={inputClasses(!!resetErrors.email)}
-                    />
-                    {resetErrors.email && (
-                      <p className="text-red-400 text-xs ml-1">
-                        {resetErrors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(6,182,212,0.39)] transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98]"
-                  >
-                    Verify Email
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setView("login")}
-                    className="w-full mt-2 text-slate-400 hover:text-white text-sm py-2 transition-colors"
-                  >
-                    Back to Sign In
-                  </button>
-                </form>
-              )}
-
-              {/* --- VIEW 3: FORGOT PASSWORD STEP 2 (New Password) --- */}
-              {view === "forgot-step-2" && (
-                <form onSubmit={handleForgotStep2Submit} className="space-y-6">
-                  <p className="text-slate-400 text-sm text-center mb-4">
-                    Create a new secure password for{" "}
-                    <strong>{resetData.email}</strong>.
-                  </p>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-slate-300 ml-1">
-                      New Password
-                    </label>
-                    <div className="relative group">
-                      <input
-                        name="newPassword"
-                        type={showNewPass ? "text" : "password"}
-                        placeholder="New password"
-                        value={resetData.newPassword}
-                        onChange={handleResetChange}
-                        className={
-                          inputClasses(!!resetErrors.newPassword) + " pr-12"
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPass(!showNewPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                      >
-                        {showNewPass ? <EyeIcon /> : <EyeOffIcon />}
-                      </button>
-                    </div>
-                    {resetErrors.newPassword && (
-                      <p className="text-red-400 text-xs ml-1">
-                        {resetErrors.newPassword}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-slate-300 ml-1">
-                      Confirm Password
-                    </label>
-                    <div className="relative group">
-                      <input
-                        name="confirmPassword"
-                        type={showConfirmPass ? "text" : "password"}
-                        placeholder="Re-enter password"
-                        value={resetData.confirmPassword}
-                        onChange={handleResetChange}
-                        className={
-                          inputClasses(!!resetErrors.confirmPassword) + " pr-12"
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPass(!showConfirmPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                      >
-                        {showConfirmPass ? <EyeIcon /> : <EyeOffIcon />}
-                      </button>
-                    </div>
-                    {resetErrors.confirmPassword && (
-                      <p className="text-red-400 text-xs ml-1">
-                        {resetErrors.confirmPassword}
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(6,182,212,0.39)] transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98]"
-                  >
-                    Reset Password
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
+            ← Back
+          </button>
+        )}
       </div>
 
-      {showSuccessModal && (
-        <SuccessModal
-          onClose={handleModalClose}
-          title={modalContent.title}
-          message={modalContent.message}
-        />
+      {/* LOGIN FORM */}
+      {view === "login" && (
+        <form onSubmit={handleLoginSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 block">
+              Email Address
+            </label>
+            <div className="relative group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors">
+                <AtSign size={18} />
+              </div>
+              <input
+                type="email"
+                name="email"
+                placeholder="name@company.com"
+                value={formData.email}
+                onChange={handleLoginChange}
+                onBlur={() => handleLoginBlur("email")}
+                autoComplete="email"
+                className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all duration-200 ${
+                  errors.email ? "border-red-500 focus:ring-red-200" : "border-gray-200"
+                }`}
+              />
+            </div>
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium text-gray-700 block">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setView("forgot-step-1")}
+                className="text-sm font-bold text-black hover:underline"
+              >
+                Forget Password
+              </button>
+            </div>
+            <div className="relative group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors">
+                <Lock size={18} />
+              </div>
+              <input
+                type={showPass ? "text" : "password"}
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleLoginChange}
+                onBlur={() => handleLoginBlur("password")}
+                autoComplete="current-password"
+                className={`w-full pl-10 pr-12 py-3 rounded-xl border bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all duration-200 ${
+                  errors.password ? "border-red-500 focus:ring-red-200" : "border-gray-200"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors cursor-pointer"
+              >
+                {showPass ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black"
+              />
+              <span className="text-sm text-gray-700">Remember me</span>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-transform active:scale-[0.98] flex items-center justify-center gap-2 group shadow-lg shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Signing In..." : "Sign In"}
+            {!isLoading && (
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            )}
+          </button>
+        </form>
       )}
+
+      {/* FORGOT PASSWORD STEP 1 */}
+      {view === "forgot-step-1" && (
+        <form onSubmit={handleForgotStep1Submit} className="space-y-6">
+          <p className="text-gray-600 text-sm text-center mb-4">
+            Enter your email address to verify your account.
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 block">
+              Email Address
+            </label>
+            <div className="relative group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors">
+                <AtSign size={18} />
+              </div>
+              <input
+                type="email"
+                name="email"
+                placeholder="name@company.com"
+                value={resetData.email}
+                onChange={handleResetChange}
+                className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all duration-200 ${
+                  resetErrors.email ? "border-red-500" : "border-gray-200"
+                }`}
+              />
+            </div>
+            {resetErrors.email && (
+              <p className="text-red-500 text-xs mt-1">{resetErrors.email}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-transform active:scale-[0.98] flex items-center justify-center gap-2 group shadow-lg shadow-black/20"
+          >
+            Verify Email
+            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        </form>
+      )}
+
+      {/* FORGOT PASSWORD STEP 2 */}
+      {view === "forgot-step-2" && (
+        <form onSubmit={handleForgotStep2Submit} className="space-y-6">
+          <p className="text-gray-600 text-sm text-center mb-4">
+            Create a new secure password for <strong>{resetData.email}</strong>.
+          </p>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 block">
+              New Password
+            </label>
+            <div className="relative group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors">
+                <Lock size={18} />
+              </div>
+              <input
+                type={showNewPass ? "text" : "password"}
+                name="newPassword"
+                placeholder="New password"
+                value={resetData.newPassword}
+                onChange={handleResetChange}
+                className={`w-full pl-10 pr-12 py-3 rounded-xl border bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all duration-200 ${
+                  resetErrors.newPassword ? "border-red-500" : "border-gray-200"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPass(!showNewPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+              >
+                {showNewPass ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
+            {resetErrors.newPassword && (
+              <p className="text-red-500 text-xs mt-1">{resetErrors.newPassword}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 block">
+              Confirm Password
+            </label>
+            <div className="relative group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors">
+                <Lock size={18} />
+              </div>
+              <input
+                type={showConfirmPass ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Re-enter password"
+                value={resetData.confirmPassword}
+                onChange={handleResetChange}
+                className={`w-full pl-10 pr-12 py-3 rounded-xl border bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all duration-200 ${
+                  resetErrors.confirmPassword ? "border-red-500" : "border-gray-200"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPass(!showConfirmPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+              >
+                {showConfirmPass ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
+            {resetErrors.confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">{resetErrors.confirmPassword}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-transform active:scale-[0.98] flex items-center justify-center gap-2 group shadow-lg shadow-black/20"
+          >
+            Reset Password
+            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        </form>
+      )}
+
+      {/* Footer */}
+      {view === "login" && (
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="font-bold text-black hover:underline"
+            >
+              Sign Up
+            </Link>
+          </p>
+        </div>
+      )}
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <SuccessPopup
+            title={modalContent.title}
+            message={modalContent.message}
+            onClose={handleModalClose}
+          />
+        )}
+      </AuthCard>
     </div>
   );
 };

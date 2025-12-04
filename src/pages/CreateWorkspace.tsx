@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import BackgroundTech from "@/components/BackgroundTech";
+import AuthBackgroundTech from "@/components/AuthBackgroundTech";
 import { useNavigate } from "react-router-dom";
 import { WorkspaceService } from "@/lib/workspace";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 // --- ICONS ---
 const PlayIcon = () => (
   <svg
-    className="w-12 h-12 text-white opacity-90 group-hover:scale-110 transition-transform duration-300"
+    className="w-10 h-10 text-white opacity-90 group-hover:scale-110 transition-transform duration-300"
     fill="currentColor"
     viewBox="0 0 24 24"
   >
@@ -80,7 +80,7 @@ const VideoPlaceholder = ({
   onPlay: () => void;
 }) => {
   return (
-    <div className="w-full aspect-video bg-black rounded-xl border border-slate-700/50 relative overflow-hidden group shadow-lg mb-6">
+    <div className="w-full h-40 aspect-video bg-black rounded-xl border border-slate-700/50 relative overflow-hidden group shadow-lg mb-6">
       {isPlaying ? (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
           <p className="text-cyan-400 animate-pulse">Video Player Loaded...</p>
@@ -117,16 +117,29 @@ const CreateWorkspace = () => {
   const [playIntroVideo, setPlayIntroVideo] = useState(false);
   const [playSuccessVideo, setPlaySuccessVideo] = useState(false);
   const [error, setError] = useState("");
-  const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Animation States
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
   // --- EFFECTS ---
-  // Trigger 1-second delay on page load for animation
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsMounted(true);
-    }, 1000);
-    return () => clearTimeout(timer);
+    // 1. Start Expansion (Wait 100ms after mount)
+    const expandTimer = setTimeout(() => {
+      setIsExpanded(true);
+    }, 100);
+
+    // 2. Reveal Content (Wait for 2000ms expansion to finish)
+    // 100ms start delay + 2000ms duration = 2100ms total
+    const contentTimer = setTimeout(() => {
+      setShowContent(true);
+    }, 2100);
+
+    return () => {
+      clearTimeout(expandTimer);
+      clearTimeout(contentTimer);
+    };
   }, []);
 
   // --- HANDLERS ---
@@ -156,6 +169,8 @@ const CreateWorkspace = () => {
 
       // Switch to Success Step
       setStep("success");
+      // Ensure content remains visible
+      setShowContent(true);
     } catch (error) {
       console.error("Error creating workspace:", error);
 
@@ -203,27 +218,37 @@ const CreateWorkspace = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-sans text-slate-200">
       {/* 1. Backdrop */}
       <div>
-        <BackgroundTech />
+        <AuthBackgroundTech />
       </div>
 
-      {/* 2. Modal Container with Transition Logic */}
+      {/* 2. Modal Container with SLOW EXPANDING WIDTH Logic */}
       <div
         className={`
-          relative z-10 w-full max-w-lg bg-[#0f172a] border border-cyan-500/20 rounded-3xl 
-          shadow-[0_0_60px_rgba(0,0,0,0.6)] overflow-hidden 
-          transition-all duration-1000 ease-out transform
-          ${
-            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
-          }
+          relative z-20 bg-white rounded-3xl flex flex-col
+          shadow-[0_50px_150px_-20px_rgba(0,0,0,0.5)] 
+          overflow-hidden border border-gray-100
+          transition-all duration-[2500ms] ease-[cubic-bezier(0.25,1,0.5,1)]
+          ${isExpanded ? "w-full max-w-2xl opacity-100" : "w-0 opacity-0"}
         `}
+        style={{
+          // Set min-height so it expands as a rectangle, not a thin line
+          minHeight: "600px",
+        }}
       >
         {/* ---------------- STEP 1: CREATE FORM ---------------- */}
         {step === "create" && (
-          <div className="p-8 md:p-10 animate-fade-in">
+          // Content Wrapper - Fades in AFTER the expansion finishes
+          <div
+            className={`
+            p-8 md:p-10 w-full
+            transition-opacity duration-1000 ease-in-out
+            ${showContent ? "opacity-100" : "opacity-0"}
+          `}
+          >
             {/* Title Area */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-cyan-500 uppercase tracking-widest mb-1">
-                WorkSpace
+              <h2 className="text-2xl font-bold text-black uppercase tracking-widest mb-1">
+                Create Your WorkSpace
               </h2>
             </div>
 
@@ -235,19 +260,18 @@ const CreateWorkspace = () => {
             />
 
             {/* Explanation Text */}
-            <div className="bg-slate-800/50 rounded-xl p-4 mb-8 border border-slate-700/50">
-              <p className="text-slate-400 text-sm leading-relaxed text-center text-white">
+            <div className="p-4 mb-8">
+              <p className="text-2xl leading-relaxed text-center text-black">
                 A workspace is the place where all of your Ideal Client
                 Profiles, Product Briefs and the outputs you generate inside
-                VoxBox are stored. It acts as your business folder so everything
-                stays organised in one place.
+                VoxBox are stored.
               </p>
             </div>
 
             {/* Form Fields */}
             <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-2 ml-1">
+                <label className="block text-xs font-bold text-black uppercase mb-2 ml-1">
                   Workspace Name <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -255,9 +279,9 @@ const CreateWorkspace = () => {
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
                   placeholder="Your Business Name"
-                  className={`w-full bg-slate-900 border ${
+                  className={`w-full bg-gray-300 border ${
                     error ? "border-red-500" : "border-slate-700"
-                  } rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/20 outline-none transition-all`}
+                  } rounded-xl px-4 py-3 text-black placeholder-black/25 focus:border-black focus:ring-1 focus:ring-cyan-400/20 outline-none transition-all`}
                 />
                 {error && (
                   <p className="text-red-400 text-xs mt-1 ml-1">{error}</p>
@@ -265,14 +289,14 @@ const CreateWorkspace = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-2 ml-1">
+                <label className="block text-xs font-bold text-black uppercase mb-2 ml-1">
                   Country
                 </label>
                 <div className="relative">
                   <select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/20 outline-none appearance-none cursor-pointer"
+                    className="w-full bg-gray-300 border border-slate-700 rounded-xl px-4 py-3 text-black focus:border-black focus:ring-1 focus:ring-black outline-none appearance-none cursor-pointer"
                   >
                     <option>United Kingdom</option>
                     <option>United States</option>
@@ -289,7 +313,7 @@ const CreateWorkspace = () => {
               <button
                 onClick={handleCreate}
                 disabled={isLoading || !workspaceName.trim()}
-                className="w-full py-4 mt-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-[0_4px_20px_rgba(6,182,212,0.3)] hover:shadow-[0_6px_25px_rgba(6,182,212,0.5)] transform hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-4 mt-4 bg-black text-white font-bold text-lg rounded-xl shadow-[0_4px_20px_rgba(6,182,212,0.3)] hover:shadow-[0_6px_25px_rgba(6,182,212,0.5)] transform hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
@@ -325,18 +349,24 @@ const CreateWorkspace = () => {
 
         {/* ---------------- STEP 2: SUCCESS POPUP ---------------- */}
         {step === "success" && (
-          <div className="relative p-8 md:p-10 text-center overflow-hidden animate-pop-in">
-            {/* Define custom animation for "Pop In" effect */}
+          <>
             <style>{`
-              @keyframes popIn {
+              @keyframes fadeIn {
                 0% { opacity: 0; transform: scale(0.9); }
                 100% { opacity: 1; transform: scale(1); }
               }
-              .animate-pop-in {
-                animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+              .animate-fade-in {
+                animation: fadeIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+              }
+              @keyframes bounceSubtle {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+              }
+              .animate-bounce-subtle {
+                animation: bounceSubtle 2s ease-in-out infinite;
               }
             `}</style>
-
+            <div className="relative p-8 md:p-10 text-center overflow-hidden animate-fade-in bg-white h-full flex flex-col justify-center">
             {/* CHARMING PARTY CONFETTI */}
             <PartyConfetti />
 
@@ -345,9 +375,9 @@ const CreateWorkspace = () => {
 
             <div className="relative z-10">
               {/* Success Icon */}
-              <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.3)] animate-bounce-subtle">
+              <div className="w-16 h-16 mx-auto bg-black rounded-full flex items-center justify-center mb-6 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.3)] animate-bounce-subtle">
                 <svg
-                  className="w-8 h-8 text-green-400"
+                  className="w-8 h-8 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -362,10 +392,10 @@ const CreateWorkspace = () => {
               </div>
 
               {/* Title & Message */}
-              <h2 className="text-3xl font-extrabold text-white mb-4 drop-shadow-lg">
+              <h2 className="text-3xl font-extrabold text-black mb-4 drop-shadow-lg">
                 Workspace created
               </h2>
-              <p className="text-slate-300 text-sm leading-relaxed mb-8 px-2">
+              <p className="text-black text-sm leading-relaxed mb-8 px-2">
                 Congratulations, your workspace has been created. Please watch
                 this short tour of VoxBox so you can see where everything is and
                 understand how to get started.
@@ -382,7 +412,7 @@ const CreateWorkspace = () => {
                 {/* Watch Video Button */}
                 <button
                   onClick={handleWatchVideo}
-                  className="w-full py-4 bg-[#0f172a] border border-cyan-500/50 text-cyan-400 font-bold text-lg rounded-xl hover:bg-cyan-500 hover:text-white hover:border-transparent shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all duration-300 flex items-center justify-center gap-2 group"
+                  className="w-full py-4 bg-[#0f172a] border border-cyan-500/50 text-white font-bold text-lg rounded-xl hover:bg-cyan-500 hover:text-white hover:border-transparent shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all duration-300 flex items-center justify-center gap-2 group"
                 >
                   <svg
                     className="w-5 h-5 group-hover:scale-110 transition-transform"
@@ -398,13 +428,14 @@ const CreateWorkspace = () => {
                 <button
                   type="button"
                   onClick={handleGoToDashboard}
-                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(6,182,212,0.39)] transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98]"
+                  className="w-full bg-white text-black font-bold text-lg py-3.5 rounded-xl shadow-[0_25px_50px_rgba(0,0,0,0.3),0_10px_100px_rgba(0,0,0,0.2)] transition-all duration-200"
                 >
                   Go to Dashboard
                 </button>
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
     </div>

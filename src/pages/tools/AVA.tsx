@@ -282,13 +282,20 @@ const AVA = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Sync isHeaderScrolled with AppNavbar via localStorage
+  // Use the correct progress based on current stage
   useEffect(() => {
     if (!sessionId) return;
     
+    // Determine which progress to use based on current stage
+    const activeProgress = 
+      currentStage === "phase2" || isPhase2Complete
+        ? phase2Progress
+        : phase1Progress;
+    
     const progressData = {
       isScrolled: isHeaderScrolled,
-      currentQuestionIndex: phase1Progress.currentQuestionIndex,
-      totalQuestions: phase1Progress.totalQuestions,
+      currentQuestionIndex: activeProgress.currentQuestionIndex,
+      totalQuestions: activeProgress.totalQuestions,
     };
     
     localStorage.setItem("avaProgressData", JSON.stringify(progressData));
@@ -297,7 +304,7 @@ const AVA = () => {
     window.dispatchEvent(
       new CustomEvent("avaProgressUpdate", { detail: progressData })
     );
-  }, [isHeaderScrolled, phase1Progress, sessionId]);
+  }, [isHeaderScrolled, phase1Progress, phase2Progress, currentStage, isPhase2Complete, sessionId]);
 
 
   // Attach scroll listener directly to chatContainerRef and check all scrollable elements
@@ -955,6 +962,11 @@ const AVA = () => {
   }, [currentStage, userName]);
 
   const handlePhase1Complete = (completedUserName: string) => {
+    // Initialize Phase 2 progress when Phase 2 starts
+    setPhase2Progress({
+      currentQuestionIndex: 0,
+      totalQuestions: 21, // 21 sections in Phase 2
+    });
     console.log("✅ Phase 1 Complete, transitioning to Phase 2");
     console.log("User Name from Phase 1:", completedUserName);
 
@@ -1064,14 +1076,14 @@ const AVA = () => {
         : phase1Progress; // Use actual Phase 1 progress
 
     return (
-      <div className="flex flex-col min-h-[calc(100vh-80px)] overflow-hidden relative">
-        {/* Background with Colors */}
-        <div className="fixed inset-0 z-0 pointer-events-none bg-[#020617] opacity-80"></div>
+      <div className="flex flex-col min-h-[calc(100vh-80px)] overflow-hidden relative bg-white">
+        {/* Background - White */}
+        <div className="fixed inset-0 z-0 pointer-events-none bg-white"></div>
         {/* Single Header for both Phase 1 and Phase 2 - Fixed directly below AppNavbar */}
         {/* Positioned at top-20 (80px) to be directly below AppNavbar, and sidebarOffset to account for sidebar */}
         {/* Right position accounts for scrollbar width so scrollbar is visible and not hidden */}
         <div
-          className={`fixed top-20 z-50 bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/50 transition-all duration-500 ease-in-out ${
+          className={`fixed top-20 z-50 bg-white backdrop-blur-xl border-b border-gray-200 transition-all duration-500 ease-in-out ${
             showAvaHeader && !isHeaderScrolled
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-full pointer-events-none"
@@ -1090,14 +1102,14 @@ const AVA = () => {
             isScrolled={isHeaderScrolled}
           />
           {currentStage === "phase2" && isPhase2Complete && (
-            <div className="bg-slate-900/60 backdrop-blur-xl px-4 sm:px-6 py-2 border-t border-slate-800/50">
+            <div className="bg-white backdrop-blur-xl px-4 sm:px-6 py-2 border-t border-gray-200">
               <div className="max-w-3xl mx-auto flex items-center justify-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePhase2Export}
                   disabled={isExporting}
-                  className="h-7 text-xs gap-1 bg-slate-800/50 border-slate-700/50 text-slate-200 hover:bg-slate-800 hover:border-cyan-500/50"
+                  className="h-7 text-xs gap-1 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
                 >
                   {isExporting ? (
                     <Loader2 className="w-3 h-3 animate-spin" />

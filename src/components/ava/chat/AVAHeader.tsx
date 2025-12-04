@@ -80,7 +80,7 @@ export const AVAHeader = ({
   };
 
   const headerClassName = cn(
-    "relative bg-slate-900/95 backdrop-blur-xl border-b-2 border-slate-700/60 overflow-hidden transition-all duration-300",
+    "relative bg-white backdrop-blur-xl border-b-2 border-gray-200 overflow-hidden transition-all duration-300",
     isScrolled ? "h-6" : "h-16",
     offsetClassName,
     className
@@ -100,10 +100,10 @@ export const AVAHeader = ({
                   className="w-7 h-7 rounded-lg flex-shrink-0 object-cover"
                 />
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                  <h1 className="text-sm font-semibold text-gray-900">
                     AVA
                   </h1>
-                  <p className="text-[10px] text-slate-400 truncate">
+                  <p className="text-[10px] text-gray-600 truncate">
                     {getStatusText()}
                   </p>
                 </div>
@@ -111,9 +111,9 @@ export const AVAHeader = ({
 
               <div className="flex items-center gap-2 flex-shrink-0">
                 {userName && (
-                  <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-slate-800/50 border border-slate-700/50 rounded-full">
-                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
-                    <span className="text-[10px] text-slate-200">
+                  <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 border border-gray-300 rounded-full">
+                    <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                    <span className="text-[10px] text-gray-700">
                       {userName}
                     </span>
                   </div>
@@ -138,7 +138,7 @@ export const AVAHeader = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                          className="h-6 w-6 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                           title="Start New Session"
                         >
                           <RotateCcw className="w-3 h-3" />
@@ -181,13 +181,13 @@ export const AVAHeader = ({
               stage === "transition" ||
               stage === "complete") && (
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-slate-800/50 rounded-full h-1 overflow-hidden">
+                <div className="flex-1 bg-gray-200 rounded-full h-1 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
+                    className="h-full bg-gradient-to-r from-gray-600 to-gray-800 transition-all duration-500 ease-out"
                     style={{ width: `${getProgressValue()}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-medium text-slate-400 min-w-[2.5rem] text-right">
+                <span className="text-[10px] font-medium text-gray-600 min-w-[2.5rem] text-right">
                   {Math.round(getProgressValue())}%
                 </span>
               </div>
