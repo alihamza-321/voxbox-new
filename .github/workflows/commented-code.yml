@@ -29,7 +29,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Run ESLint to detect commented-out code
+      # 4️⃣ Run ESLint to detect commented-out code (with friendly messages)
       - name: Run Commented-Out Code Detector
-        run: npm run check-commented-code
-        continue-on-error: false
+        run: |
+          echo " Checking the code for commented-out lines..."
+          echo "Please wait while we scan your code."
+
+          if ! npm run check-commented-code; then
+            echo " **Commented Code Found**"
+            echo "It looks like some parts of the code are commented out."
+            echo "To keep the codebase clean, commented-out code must be removed."
+            echo "Please open the files shown above and delete the commented lines."
+            
+            # Add a readable summary
+            echo "### Commented-Out Code Detected" >> $GITHUB_STEP_SUMMARY
+            echo "We found commented-out code that needs to be removed before this change can be merged." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please review the files listed in the logs above." >> $GITHUB_STEP_SUMMARY
+
+            exit 1
+          fi
+
+          echo "No commented-out code found!"
