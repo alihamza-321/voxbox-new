@@ -32,22 +32,47 @@ jobs:
       # 4️⃣ Run ESLint to detect commented-out code (with friendly messages)
       - name: Run Commented-Out Code Detector
         run: |
-          echo " Checking the code for commented-out lines..."
-          echo "Please wait while we scan your code."
+          echo ""
+          echo " Starting Code Scan"
+          echo "We are checking your files to make sure no commented-out code remains."
+          echo "Commented-out code makes the project messy and harder to maintain."
+          echo ""
 
           if ! npm run check-commented-code; then
-            echo " **Commented Code Found**"
-            echo "It looks like some parts of the code are commented out."
-            echo "To keep the codebase clean, commented-out code must be removed."
-            echo "Please open the files shown above and delete the commented lines."
-            
-            # Add a readable summary
-            echo "### Commented-Out Code Detected" >> $GITHUB_STEP_SUMMARY
-            echo "We found commented-out code that needs to be removed before this change can be merged." >> $GITHUB_STEP_SUMMARY
+            echo ""
+            echo " COMMENTED CODE FOUND"
+            echo "-----------------------------------------------"
+            echo "We detected commented-out code in the files above."
+            echo "This usually happens when a developer temporarily"
+            echo "disables code but forgets to remove it later."
+            echo ""
+            echo " Why this is a problem?"
+            echo "   • It makes the code harder to read."
+            echo "   • Confuses other team members."
+            echo "   • Causes merge conflicts later."
+            echo ""
+            echo " What you need to do:"
+            echo "   • Open each file listed in the logs above."
+            echo "   • Delete the commented-out lines."
+            echo "   • Push your code again."
+            echo ""
+            echo "-----------------------------------------------"
+            echo " The build has stopped until this is fixed."
+            echo ""
+
+            # Add GitHub summary (visible in UI)
+            echo "## Commented-Out Code Detected" >> $GITHUB_STEP_SUMMARY
+            echo "We found commented code that must be cleaned up before merging." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Please review the files listed in the logs above." >> $GITHUB_STEP_SUMMARY
+            echo "### Why this matters" >> $GITHUB_STEP_SUMMARY
+            echo "- Commented code causes confusion" >> $GITHUB_STEP_SUMMARY
+            echo "- Makes debugging harder" >> $GITHUB_STEP_SUMMARY
+            echo "- Affects long-term code quality" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### What to do next" >> $GITHUB_STEP_SUMMARY
+            echo "Please remove the commented-out code shown in the logs above and push the changes again." >> $GITHUB_STEP_SUMMARY
 
             exit 1
           fi
 
-          echo "No commented-out code found!"
+          echo " No commented-out code found. Everything looks clean!"
